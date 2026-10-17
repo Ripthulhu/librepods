@@ -10,17 +10,26 @@ data class MicrophoneFrame(
 ) {
     companion object {
         fun parsePacket(packet: ByteArray): List<MicrophoneFrame> {
-            if (packet.size < 22) {
+            if (packet.size < 8) {
                 throw IllegalArgumentException("Microphone packet too short")
             }
 
-            if (packet[4] != MessageOpcode.MICROPHONE_STREAM.value) {
+            if (packet.take(6) != listOf<Byte>(4, 0, 4, 0, MessageOpcode.MICROPHONE_STREAM.value, 0)) {
                 throw IllegalArgumentException("Not a microphoneState packet")
             }
 
 
             if (packet[6] != 0x01.toByte() || packet[7] != 0x00.toByte()) {
                 return emptyList()
+            }
+
+            require(packet.size > 22) { "Microphone packet has no audio records" }
+            var endOfRecords = 22
+            while (endOfRecords < packet.size) {
+                require(packet.size - endOfRecords >= 5) { "Truncated microphone record" }
+                val size = packet[endOfRecords + 4].toInt() and 0xff
+                require(size > 0 && size <= packet.size - endOfRecords - 5) { "Invalid microphone record length" }
+                endOfRecords += 5 + size
             }
 
             val frames = mutableListOf<MicrophoneFrame>()
@@ -38,10 +47,6 @@ data class MicrophoneFrame(
 
                 val start = offset + 5
                 val end = start + length
-
-                if (end > packet.size) {
-                    break
-                }
 
                 frames += MicrophoneFrame(
                     timestamp = timestamp,

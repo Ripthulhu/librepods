@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- shortcut: fork text uses English fallback until translations are contributed. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="island_battery_left">Left</string>
+    <string name="island_battery_right">Right</string>
+    <string name="island_battery_case">Case</string>
+    <string name="island_battery_headset">Headphones</string>
+    <string name="island_battery_age_recent">just now</string>
+    <string name="island_battery_age_minutes">%1$dm ago</string>
+    <string name="island_battery_age_hours">%1$dh ago</string>
+    <string name="island_battery_age_days">%1$dd ago</string>
+    <string name="island_battery_last_seen">Last seen %1$s</string>
+    <string name="island_battery_current">Current</string>
+    <string name="island_battery_cached">Cached</string>
+</resources>

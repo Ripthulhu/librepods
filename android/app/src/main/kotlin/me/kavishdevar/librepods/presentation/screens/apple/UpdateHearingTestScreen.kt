@@ -61,6 +61,7 @@ import me.kavishdevar.librepods.core.bluetooth.att.ATTHandle
 import me.kavishdevar.librepods.core.bluetooth.att.types.HearingAidSettings
 import me.kavishdevar.librepods.core.bluetooth.att.types.parseHearingAidSettingsResponse
 import me.kavishdevar.librepods.core.bluetooth.att.types.sendHearingAidSettings
+import me.kavishdevar.librepods.core.bluetooth.att.types.hearingAidSettingsWritable
 import me.kavishdevar.librepods.presentation.components.primitives.StyledScaffold
 import me.kavishdevar.librepods.presentation.design.DesignSystem
 import me.kavishdevar.librepods.presentation.design.LibrePodsTheme
@@ -112,99 +113,20 @@ fun UpdateHearingTestScreen(
                 style = MaterialTheme.typography.labelMedium,
                 textAlign = TextAlign.Center,
             )
-            val tone = rememberSaveable { mutableFloatStateOf(0.5f) }
-            val ambientNoiseReduction = rememberSaveable { mutableFloatStateOf(0.0f) }
-            val ownVoiceAmplification = rememberSaveable { mutableFloatStateOf(0.5f) }
-            val leftAmplification = rememberSaveable { mutableFloatStateOf(0.5f) }
-            val rightAmplification = rememberSaveable { mutableFloatStateOf(0.5f) }
-            val conversationBoostEnabled = rememberSaveable { mutableStateOf(false) }
-            val leftEQ = rememberSaveable(
-                saver = Saver(
-                    save = { it.value.toList() },
-                    restore = { mutableStateOf(it.toFloatArray()) }
-                )
-            ) {
-                mutableStateOf(FloatArray(8))
+            val data = state.hearingAidData
+            val writable = hearingAidSettingsWritable(data)
+            val settings = remember(data) { mutableStateOf(parseHearingAidSettingsResponse(data)) }
+            if (!writable) Text(stringResource(R.string.hearing_settings_read_only), style = MaterialTheme.typography.bodySmall)
+            fun updateBand(index: Int, text: String, left: Boolean) {
+                if (!writable) return
+                val value = text.toFloatOrNull()?.takeIf { it.isFinite() } ?: return
+                val current = settings.value ?: return
+                val updated = if (left) current.copy(leftEQ = current.leftEQ.copyOf().also { it[index] = value })
+                    else current.copy(rightEQ = current.rightEQ.copyOf().also { it[index] = value })
+                if (updated == current) return
+                settings.value = updated
+                sendHearingAidSettings(data, updated, setATTCharacteristicValue)
             }
-            val rightEQ = rememberSaveable(
-                saver = Saver(
-                    save = { it.value.toList() },
-                    restore = { mutableStateOf(it.toFloatArray()) }
-                )
-            ) {
-                mutableStateOf(FloatArray(8))
-            }
-
-            val debounceJob = remember { mutableStateOf<Job?>(null) }
-            val initialized = rememberSaveable { mutableStateOf(false) }
-
-            val hearingAidSettings = remember {
-                mutableStateOf(
-                    HearingAidSettings(
-                        leftEQ = leftEQ.value,
-                        rightEQ = rightEQ.value,
-                        leftAmplification = leftAmplification.floatValue,
-                        rightAmplification = rightAmplification.floatValue,
-                        leftTone = tone.floatValue,
-                        rightTone = tone.floatValue,
-                        leftConversationBoost = conversationBoostEnabled.value,
-                        rightConversationBoost = conversationBoostEnabled.value,
-                        leftAmbientNoiseReduction = ambientNoiseReduction.floatValue,
-                        rightAmbientNoiseReduction = ambientNoiseReduction.floatValue,
-                        netAmplification = leftAmplification.floatValue + rightAmplification.floatValue / 2,
-                        balance = 0.5f + (rightAmplification.floatValue - leftAmplification.floatValue) / 2,
-                        ownVoiceAmplification = ownVoiceAmplification.floatValue
-                    )
-                )
-            }
-
-            LaunchedEffect(state.hearingAidData) {
-                val parsed = parseHearingAidSettingsResponse(state.hearingAidData)
-                if (parsed != null) {
-                    leftEQ.value = parsed.leftEQ.copyOf()
-                    rightEQ.value = parsed.rightEQ.copyOf()
-                    conversationBoostEnabled.value = parsed.leftConversationBoost
-                    tone.floatValue = parsed.leftTone
-                    ambientNoiseReduction.floatValue = parsed.leftAmbientNoiseReduction
-                    ownVoiceAmplification.floatValue = parsed.ownVoiceAmplification
-                    leftAmplification.floatValue = parsed.leftAmplification
-                    rightAmplification.floatValue = parsed.rightAmplification
-                    initialized.value = true
-                    Log.d(TAG, "Updated hearing aid settings from notification")
-                } else {
-                    Log.w(TAG, "Failed to parse hearing aid settings from notification")
-                }
-            }
-
-            LaunchedEffect(Unit) {
-                snapshotFlow {
-                    if (!initialized.value) return@snapshotFlow null
-
-                    HearingAidSettings(
-                        leftEQ = leftEQ.value,
-                        rightEQ = rightEQ.value,
-                        leftAmplification = leftAmplification.floatValue,
-                        rightAmplification = rightAmplification.floatValue,
-                        leftTone = tone.floatValue,
-                        rightTone = tone.floatValue,
-                        leftConversationBoost = conversationBoostEnabled.value,
-                        rightConversationBoost = conversationBoostEnabled.value,
-                        leftAmbientNoiseReduction = ambientNoiseReduction.floatValue,
-                        rightAmbientNoiseReduction = ambientNoiseReduction.floatValue,
-                        netAmplification = leftAmplification.floatValue + rightAmplification.floatValue / 2f,
-                        balance = 0.5f + (rightAmplification.floatValue - leftAmplification.floatValue) / 2f,
-                        ownVoiceAmplification = ownVoiceAmplification.floatValue
-                    )
-                }
-                    .filterNotNull()
-                    .debounce(300.milliseconds)
-                    .collect { settings ->
-                        hearingAidSettings.value = settings
-                        Log.d(TAG, "Updated settings: $settings")
-                        sendHearingAidSettings(state.hearingAidData, settings, setATTCharacteristicValue)
-                    }
-            }
-
             val frequencies =
                 listOf("250Hz", "500Hz", "1kHz", "2kHz", "3kHz", "4kHz", "6kHz", "8kHz")
 
@@ -241,31 +163,17 @@ fun UpdateHearingTestScreen(
                         style = MaterialTheme.typography.labelSmall
                     )
                     OutlinedTextField(
-                        value = leftEQ.value[index].toString(),
-                        onValueChange = { newValue ->
-                            val parsed = newValue.toFloatOrNull()
-                            if (parsed != null) {
-                                val newArray = leftEQ.value.copyOf()
-                                newArray[index] = parsed
-                                leftEQ.value = newArray
-                                Log.d(TAG, "Left EQ updated at index $index to $parsed")
-                            }
-                        },
+                        value = settings.value?.leftEQ?.get(index)?.toString().orEmpty(),
+                        readOnly = !writable,
+                        onValueChange = { updateBand(index, it, left = true) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         textStyle = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.weight(1f)
                     )
                     OutlinedTextField(
-                        value = rightEQ.value[index].toString(),
-                        onValueChange = { newValue ->
-                            val parsed = newValue.toFloatOrNull()
-                            if (parsed != null) {
-                                val newArray = rightEQ.value.copyOf()
-                                newArray[index] = parsed
-                                rightEQ.value = newArray
-                                Log.d(TAG, "Right EQ updated at index $index to $parsed")
-                            }
-                        },
+                        value = settings.value?.rightEQ?.get(index)?.toString().orEmpty(),
+                        readOnly = !writable,
+                        onValueChange = { updateBand(index, it, left = false) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         textStyle = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.weight(1f)

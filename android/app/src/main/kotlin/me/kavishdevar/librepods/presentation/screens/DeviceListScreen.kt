@@ -64,6 +64,8 @@ import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifi
 import me.kavishdevar.librepods.core.devices.AirPodsSpecs
 import me.kavishdevar.librepods.core.devices.AppleDevice
 import me.kavishdevar.librepods.core.devices.AppleMetadata
+import me.kavishdevar.librepods.core.devices.AppleSettings
+import me.kavishdevar.librepods.core.devices.effectiveAllowOff
 import me.kavishdevar.librepods.core.devices.AppleState
 import me.kavishdevar.librepods.core.devices.BaseCapability
 import me.kavishdevar.librepods.core.devices.ConnectionState
@@ -142,6 +144,7 @@ fun DeviceListScreen(
                 val connectionState by device.connectionState.collectAsState()
                 val deviceState by device.state.collectAsState()
                 val deviceMetadata by device.metadata.collectAsState()
+                val deviceSettings by device.settings.collectAsState()
 
                 fun ConnectionState.shape() = when (this) {
                     ConnectionState.DISCONNECTED -> MaterialShapes.Circle.normalized()
@@ -491,7 +494,7 @@ fun DeviceListScreen(
                                                 content = {
                                                     NoiseControlSettings(
                                                         modifier = Modifier.padding(vertical = 8.dp).height(64.dp),
-                                                        showOffListeningMode = deviceState.controlStates[ControlCommandIdentifier.LISTENING_MODE]?.get(0) == 1.toByte(),
+                                                        showOffListeningMode = deviceState.effectiveAllowOff(deviceSettings as AppleSettings, (deviceMetadata as AppleMetadata).modelNumber) == true,
                                                         noiseControlModeValue = deviceState.controlStates[ControlCommandIdentifier.LISTENING_MODE]?.get(0)?.toInt() ?: 2,
                                                         onNoiseControlModeChanged = { newMode ->
                                                             CoroutineScope(Dispatchers.IO).launch {
@@ -502,6 +505,7 @@ fun DeviceListScreen(
                                                             }
                                                         },
                                                         adaptiveStrength = deviceState.controlStates[ControlCommandIdentifier.AUTO_ANC_STRENGTH]?.get(0)?.toInt() ?: 50,
+                                                        requestedAdaptiveStrength = deviceState.requestedControls[ControlCommandIdentifier.AUTO_ANC_STRENGTH]?.firstOrNull()?.toInt(),
                                                         onAdaptiveStrengthChanged = {
                                                             CoroutineScope(Dispatchers.IO).launch {
                                                                 (device as AppleDevice).setControlCommand(

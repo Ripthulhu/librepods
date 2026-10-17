@@ -10,6 +10,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"
         tools:ignore="ForegroundServicesPolicy" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -64,6 +66,13 @@
         android:theme="@style/Theme.LibrePods"
         android:description="@string/app_description"
         tools:ignore="UnusedAttribute" >
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:enabled="true"
+            android:exported="true"
+            android:multiprocess="false"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
         <receiver
             android:name=".presentation.widgets.NoiseControlWidget"
             android:exported="false">
@@ -112,7 +121,7 @@
 
         <activity
             android:name=".presentation.activities.TestActivity"
-            android:exported="true"
+            android:exported="false"
             android:theme="@style/Theme.LibrePods"
             android:label="@string/test">
         </activity>
@@ -122,10 +131,14 @@
             android:exported="false" />
 
         <service
+            android:name=".bluetooth.PairingConsentService"
+            android:exported="false"
+            android:process=":pairing_consent" />
+        <service
             android:name=".services.LibrePodsService"
             android:enabled="true"
-            android:exported="true"
-            android:foregroundServiceType="connectedDevice"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice|microphone"
             android:permission="android.permission.BLUETOOTH_CONNECT" />
         <service
             android:name=".services.AirPodsQSService"

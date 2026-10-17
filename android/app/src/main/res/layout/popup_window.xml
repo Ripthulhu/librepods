@@ -1,110 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_margin="16.dp"
-    android:id="@+id/linear_layout"
-    android:orientation="vertical"
-    android:background="@drawable/shape_popup">
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="end"
-        android:id="@+id/constraint_layout"
-        android:paddingBottom="48dp"
-        android:orientation="horizontal">
-
-        <TextView
-            android:id="@+id/name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:fontFamily="@font/inter"
-            android:gravity="center"
-            android:text="AirPods Pro"
-            android:textColor="@color/popup_text"
-
-            android:textSize="28sp"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:ignore="HardcodedText"
-            tools:layout_editor_absoluteX="0dp" />
-
-        <ImageButton
-            android:id="@+id/close_button"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_marginTop="20dp"
-            android:layout_marginEnd="16dp"
-            android:background="@drawable/shape_popup_button"
-            android:contentDescription="Close Button"
-            android:src="@drawable/ic_close"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:ignore="HardcodedText" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
-    <VideoView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/video"
-        android:contentDescription="AirPods"
-        android:src="@raw/connected"
-        tools:ignore="HardcodedText" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <!-- Left Half -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:textAlignment="center"
-                android:layout_marginTop="16dp"
-                android:fontFamily="@font/inter"
-                android:text=""
-                android:textColor="@color/popup_text"
-                android:textSize="20sp"
-                android:id="@+id/left_battery"
-                android:gravity="center"
-                tools:ignore="NestedWeights" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:textAlignment="center"
-                android:layout_marginTop="16dp"
-                android:fontFamily="@font/inter"
-                android:gravity="center"
-                android:text=""
-                android:id="@+id/right_battery"
-                android:textColor="@color/popup_text"
-                android:textSize="20sp" />
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:background="@drawable/popup_shape" android:fillViewport="false" android:forceDarkAllowed="false"
+    android:overScrollMode="never" android:scrollbars="none">
+    <LinearLayout android:id="@+id/linear_layout"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:paddingHorizontal="24dp" android:paddingTop="20dp" android:paddingBottom="20dp">
+        <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="64dp">
+            <TextView android:id="@+id/name" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginHorizontal="44dp" android:layout_gravity="center" android:gravity="center"
+                android:fontFamily="@font/inter" android:textSize="26sp" android:textStyle="bold" android:textColor="#1C1C1E"
+                android:includeFontPadding="false" android:accessibilityHeading="true"
+                android:maxLines="3" android:ellipsize="end" />
+            <ImageButton android:id="@+id/close_button" android:layout_width="48dp" android:layout_height="48dp"
+                android:layout_gravity="end|top" android:padding="16dp" android:src="@drawable/close"
+                android:background="@drawable/popup_button_shape"
+                android:contentDescription="@string/pairing_close" />
+        </FrameLayout>
+        <FrameLayout android:id="@+id/popup_artwork_container" android:layout_width="match_parent" android:layout_height="160dp"
+            android:layout_marginTop="8dp" android:layout_marginBottom="12dp"
+            android:importantForAccessibility="noHideDescendants">
+            <TextureView android:id="@+id/popup_video" android:layout_width="match_parent" android:layout_height="match_parent"
+                android:visibility="gone" />
+            <ImageView android:id="@+id/popup_artwork" android:layout_width="match_parent" android:layout_height="match_parent"
+                android:scaleType="fitCenter" android:importantForAccessibility="no" />
+        </FrameLayout>
+        <LinearLayout android:id="@+id/pairing_battery_row" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:minHeight="64dp" android:orientation="horizontal"
+            android:baselineAligned="false" android:gravity="center_vertical" android:visibility="gone"
+            android:accessibilityLiveRegion="polite">
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.45"
+                android:orientation="vertical" android:gravity="center" android:paddingHorizontal="4dp">
+                <TextView android:id="@+id/pairing_buds_battery_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center"
+                    android:fontFamily="@font/inter" android:textSize="12sp" android:textColor="#636366"
+                    android:includeFontPadding="false" android:importantForAccessibility="no" android:text="@string/pairing_battery_buds" />
+                <TextView android:id="@+id/pairing_buds_battery_text" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:gravity="center" android:layout_marginTop="4dp" android:fontFamily="@font/inter"
+                    android:textSize="18sp" android:textColor="#1C1C1E" android:includeFontPadding="false" android:text="@string/pairing_battery_unknown" />
+                <TextView android:id="@+id/pairing_right_battery_text" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:gravity="center" android:layout_marginTop="4dp" android:fontFamily="@font/inter"
+                    android:textSize="14sp" android:textColor="#1C1C1E" android:includeFontPadding="false" android:visibility="gone" />
+            </LinearLayout>
+            <LinearLayout android:id="@+id/pairing_case_battery_column" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.55"
+                android:orientation="vertical" android:gravity="center" android:paddingHorizontal="4dp">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center"
+                    android:fontFamily="@font/inter" android:textSize="12sp" android:textColor="#636366"
+                    android:includeFontPadding="false" android:importantForAccessibility="no" android:text="@string/island_battery_case" />
+                <TextView android:id="@+id/pairing_case_battery_text" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:gravity="center" android:layout_marginTop="4dp" android:fontFamily="@font/inter"
+                    android:textSize="18sp" android:textColor="#1C1C1E" android:includeFontPadding="false" android:text="@string/pairing_battery_unknown" />
+            </LinearLayout>
         </LinearLayout>
-
-        <!-- Right Half -->
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:textAlignment="center"
-            android:id="@+id/case_battery"
-            android:layout_marginTop="16dp"
-            android:fontFamily="@font/inter"
-            android:gravity="center"
-            android:text=""
-            android:textColor="@color/popup_text"
-            android:textSize="20sp" />
+        <TextView android:id="@+id/pairing_message" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:minHeight="48dp" android:gravity="center" android:fontFamily="@font/inter"
+            android:includeFontPadding="false" android:lineSpacingExtra="3dp"
+            android:textSize="15sp" android:textColor="#636366" android:accessibilityLiveRegion="polite" />
+        <FrameLayout android:id="@+id/pairing_actions" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:minHeight="48dp" android:layout_marginTop="12dp">
+            <Button android:id="@+id/pairing_primary" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:minHeight="48dp" android:paddingHorizontal="16dp" android:paddingVertical="12dp"
+                android:background="@drawable/pairing_primary_background"
+                android:stateListAnimator="@null" android:textColor="#0066D6" android:textSize="17sp"
+                android:fontFamily="@font/inter" android:textAllCaps="false" android:text="@string/pairing_connect" />
+            <ProgressBar android:id="@+id/pairing_progress" style="?android:attr/progressBarStyleSmall"
+                android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center"
+                android:indeterminateTint="#636366" android:contentDescription="@string/pairing_connecting_title" android:visibility="gone" />
+        </FrameLayout>
     </LinearLayout>
-</LinearLayout>
+</ScrollView>

@@ -22,6 +22,7 @@ import me.kavishdevar.librepods.core.bluetooth.MacAddress
 import me.kavishdevar.librepods.core.devices.AppleDevice
 import me.kavishdevar.librepods.core.devices.ConnectionState
 import me.kavishdevar.librepods.core.devices.Device
+import me.kavishdevar.librepods.bluetooth.DeviceSettingsRefreshResult
 
 @Composable
 fun AppNavGraph(
@@ -30,6 +31,7 @@ fun AppNavGraph(
     showReleaseNotes: Boolean = false,
     updatesShown: () -> Unit = {},
     onboardingComplete: () -> Unit = {},
+    refreshDeviceSettings: suspend (AppleDevice) -> DeviceSettingsRefreshResult,
 ) {
     val backRequests = remember { Channel<CompletableDeferred<Unit>>(Channel.BUFFERED) }
 
@@ -110,7 +112,8 @@ fun AppNavGraph(
                             heartRateRepository = heartRateRepository,
                             showReleaseNotes = showReleaseNotes,
                             updatesShown = updatesShown,
-                            onboardingComplete = onboardingComplete
+                            onboardingComplete = onboardingComplete,
+                            refreshDeviceSettings = refreshDeviceSettings
                         )
                     }
                 },

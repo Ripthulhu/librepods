@@ -11,7 +11,7 @@ data class CustomEqPacket(
     override val type: AACPPacketType = AACPPacketType.MESSAGE
     override val service: Byte = 0x04
 
-    override val opcode = MessageOpcode.CONTROL_COMMAND
+    override val opcode = MessageOpcode.CUSTOM_EQ
 
     override val payload: ByteArray = customEq.toAACPPayload()
 
@@ -20,6 +20,8 @@ data class CustomEqPacket(
             packet: ByteArray,
             destination: PacketDestination = PacketDestination.HOST
         ): CustomEqPacket {
+            require(packet.size == 13 && packet.copyOfRange(0, 9).contentEquals(
+                byteArrayOf(4, 0, 4, 0, 0x63, 0, 5, 0, 1))) { "Invalid custom EQ response" }
             val payload = packet.copyOfRange(6, packet.size)
 
             val length = payload[0].toInt()

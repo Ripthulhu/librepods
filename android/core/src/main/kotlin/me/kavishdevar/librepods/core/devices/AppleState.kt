@@ -29,6 +29,7 @@ data class AppleState(
 
     val battery: Set<Battery> = emptySet(),
     val controlStates: Map<ControlCommandIdentifier, ByteArray> = emptyMap(),
+    val requestedControls: Map<ControlCommandIdentifier, ByteArray> = emptyMap(),
 
     val magicKeys: Map<MagicKeyType, ByteArray> = emptyMap(),
 
@@ -39,6 +40,7 @@ data class AppleState(
     val hearingAidData: ByteArray = byteArrayOf(),
 
     val customEq: CustomEq = CustomEq(1, 50, 50, 50),
+    val requestedCustomEq: CustomEq? = null,
 
     val microphoneState: MicrophoneState = MicrophoneState(),
     val recordingState: RecordingState = RecordingState(),

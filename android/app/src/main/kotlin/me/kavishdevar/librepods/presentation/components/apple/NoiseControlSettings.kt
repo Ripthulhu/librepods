@@ -74,6 +74,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -114,8 +115,11 @@ fun NoiseControlSettings(
     onNoiseControlModeChanged: (Int) -> Unit,
     adaptiveStrength: Int = 0,
     onAdaptiveStrengthChanged: (Int) -> Unit,
-    showLabels: Boolean = true
+    showLabels: Boolean = true,
+    requestedAdaptiveStrength: Int? = null
 ) {
+    val currentModeChanged by rememberUpdatedState(onNoiseControlModeChanged)
+    val currentStrengthChanged by rememberUpdatedState(onAdaptiveStrengthChanged)
     when (LocalDesignSystem.current) {
         DesignSystem.Material -> {
             val options = buildList {
@@ -227,7 +231,7 @@ fun NoiseControlSettings(
             val width = remember { mutableStateOf(0.dp) }
 
             val currentMode by rememberUpdatedState(noiseControlModeValue)
-            val currentStrength by rememberUpdatedState(adaptiveStrength)
+            val currentStrength by rememberUpdatedState((requestedAdaptiveStrength ?: adaptiveStrength).coerceIn(0, 100))
             val currentShowOff by rememberUpdatedState(showOffListeningMode)
             val currentWidth by rememberUpdatedState(width.value.value)
 
@@ -270,14 +274,14 @@ fun NoiseControlSettings(
             val animationCoroutineScope = rememberCoroutineScope()
 
             var isDragging by remember { mutableStateOf(false) }
-            val currentIsDragging by rememberUpdatedState(isDragging)
+            var dragOffset by remember { mutableFloatStateOf(0f) }
 
-            LaunchedEffect(width.value, noiseControlModeValue, adaptiveStrength, showOffListeningMode) {
+            LaunchedEffect(width.value, noiseControlModeValue, adaptiveStrength, requestedAdaptiveStrength, showOffListeningMode) {
                 if (!isDragging && width.value > 0.dp) {
                     val targetOffset = when (noiseControlModeValue) {
                         1 -> 0f
                         3 -> targetTransparencyStart
-                        4 -> targetAdaptiveStart + adaptiveStrength * (targetAncStart - targetAdaptiveStart - currentTargetModeWidth) / 100f
+                        4 -> targetAdaptiveStart + currentStrength * (targetAncStart - targetAdaptiveStart - currentTargetModeWidth) / 100f
                         2 -> targetAncStart
                         else -> 0f
                     }
@@ -325,8 +329,8 @@ fun NoiseControlSettings(
                         .collect { mode ->
                             mode?.let {
                                 targetMode.intValue = it
-                                if (currentIsDragging) {
-                                    onNoiseControlModeChanged(it)
+                                if (isDragging) {
+                                    currentModeChanged(it)
                                 }
                             }
                         }
@@ -347,8 +351,8 @@ fun NoiseControlSettings(
                         .distinctUntilChanged()
                         .collect { currentAdaptiveStrength ->
                             targetStrength.intValue = currentAdaptiveStrength ?: -1
-                            if (currentIsDragging && currentAdaptiveStrength != null) {
-                                onAdaptiveStrengthChanged(currentAdaptiveStrength)
+                            if (isDragging && currentAdaptiveStrength != null) {
+                                currentStrengthChanged(currentAdaptiveStrength)
                             }
                         }
                 }
@@ -390,7 +394,7 @@ fun NoiseControlSettings(
                                 .fillMaxHeight()
                                 .pointerInput(Unit) {
                                     detectTapGestures {
-                                        onNoiseControlModeChanged(1)
+                                        currentModeChanged(1)
                                     }
                                 }
                                 .width(offWidth.dp)
@@ -429,7 +433,7 @@ fun NoiseControlSettings(
                                 )
                                 .pointerInput(Unit) {
                                     detectTapGestures {
-                                        onNoiseControlModeChanged(3)
+                                        currentModeChanged(3)
                                     }
                                 },
                             contentAlignment = Alignment.Center
@@ -455,7 +459,7 @@ fun NoiseControlSettings(
                                 .pointerInput(Unit) {
                                     detectTapGestures { tapOffset ->
                                         if (currentMode != 4) {
-                                            onNoiseControlModeChanged(4)
+                                            currentModeChanged(4)
                                         } else {
                                             val tapXInDp =
                                                 with(density) { tapOffset.x.toDp().value }
@@ -472,7 +476,7 @@ fun NoiseControlSettings(
                                                         .roundToInt()
                                                         .coerceIn(0, 100)
 
-                                                onAdaptiveStrengthChanged(newStrength)
+                                                currentStrengthChanged(newStrength)
                                             }
                                         }
                                     }
@@ -553,7 +557,7 @@ fun NoiseControlSettings(
                                 )
                                 .pointerInput(Unit) {
                                     detectTapGestures {
-                                        onNoiseControlModeChanged(2)
+                                        currentModeChanged(2)
                                     }
                                 },
                             contentAlignment = Alignment.Center
@@ -631,9 +635,11 @@ fun NoiseControlSettings(
                         }
                         .width(modeWidth.dp)
                         .height(iconRowHeight.value)
+                        .testTag("noise-control-thumb")
                         .pointerInput(Unit) {
                             detectHorizontalDragGestures(
                                 onDragStart = {
+                                    dragOffset = offset.value
                                     isDragging = true
                                     velocityTracker.resetTracking()
                                     animationCoroutineScope.launch {
@@ -641,12 +647,27 @@ fun NoiseControlSettings(
                                     }
                                 },
                                 onDragEnd = {
+                                    val thumbCenter = dragOffset + currentModeWidth / 2f
+                                    val finalMode = when {
+                                        currentShowOff && thumbCenter < currentTransparencyStart -> 1
+                                        thumbCenter < currentAdaptiveStart -> 3
+                                        thumbCenter < currentAncStart -> 4
+                                        else -> 2
+                                    }
+                                    val finalStrength = if (currentMode == 4 && finalMode == 4) {
+                                        val travel = currentAncStart - currentAdaptiveStart - currentModeWidth
+                                        if (travel <= 0f) currentStrength else
+                                            ((dragOffset - currentAdaptiveStart) / travel * 100f).roundToInt().coerceIn(0, 100)
+                                    } else currentStrength
+                                    // The final offset may not reach snapshotFlow before the gesture ends.
+                                    if (finalMode != currentMode) currentModeChanged(finalMode)
+                                    if (currentMode == 4 && finalMode == 4) currentStrengthChanged(finalStrength)
                                     isDragging = false
 
-                                    val finalTarget = when (currentMode) {
+                                    val finalTarget = when (finalMode) {
                                         1 -> 0f
                                         3 -> targetTransparencyStart
-                                        4 -> targetAdaptiveStart + currentStrength * (targetAncStart - targetAdaptiveStart - currentTargetModeWidth) / 100f
+                                        4 -> targetAdaptiveStart + finalStrength * (targetAncStart - targetAdaptiveStart - currentTargetModeWidth) / 100f
                                         2 -> targetAncStart
                                         else -> 0f
                                     }
@@ -675,7 +696,14 @@ fun NoiseControlSettings(
                                             )
                                         )
                                     }
-                                    animationCoroutineScope.launch { offset.animateTo(0f) }
+                                    val restoredOffset = when (currentMode) {
+                                        1 -> 0f
+                                        3 -> targetTransparencyStart
+                                        4 -> targetAdaptiveStart + currentStrength * (targetAncStart - targetAdaptiveStart - currentTargetModeWidth) / 100f
+                                        2 -> targetAncStart
+                                        else -> 0f
+                                    }
+                                    animationCoroutineScope.launch { offset.animateTo(restoredOffset) }
                                     animationCoroutineScope.launch { tapProgress.animateTo(0f) }
                                     velocityTracker.resetTracking()
                                 }
@@ -698,9 +726,10 @@ fun NoiseControlSettings(
                                     )
                                 }
 
-                                val newOffset = offset.value + dragAmount.toDp().value
+                                val newOffset = dragOffset + dragAmount.toDp().value
                                 val maxTravel = (currentWidth - currentModeWidth).coerceAtLeast(0f)
                                 val safeOffset = newOffset.coerceIn(0f, maxTravel)
+                                dragOffset = safeOffset
 
                                 animationCoroutineScope.launch {
                                     offset.snapTo(safeOffset)
@@ -744,6 +773,26 @@ fun NoiseControlSettings(
             }
         }
     }
+}
+
+@Composable
+internal fun AdaptiveAudioStrengthSlider(
+    adaptiveStrength: Int,
+    requestedAdaptiveStrength: Int?,
+    onAdaptiveStrengthChanged: (Int) -> Unit,
+    enabled: Boolean
+) {
+    StyledSlider(
+        value = 100f - (requestedAdaptiveStrength ?: adaptiveStrength).coerceIn(0, 100),
+        onValueChange = { onAdaptiveStrengthChanged((100f - it).roundToInt().coerceIn(0, 100)) },
+        valueRange = 0f..100f,
+        snapPoints = listOf(0f, 50f, 100f),
+        startImageVector = LocalIcons.current.SpeakerMin,
+        endImageVector = LocalIcons.current.SpeakerMax,
+        independent = true,
+        description = stringResource(R.string.adaptive_audio_description),
+        enabled = enabled
+    )
 }
 
 @Preview

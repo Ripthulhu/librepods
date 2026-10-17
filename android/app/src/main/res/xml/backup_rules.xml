@@ -6,6 +6,10 @@
    See https://developer.android.com/about/versions/12/backup-restore
 -->
 <full-backup-content>
+    <exclude domain="file" path="microphone-tests/" />
+    <exclude domain="database" path="librepods.db" />
+    <exclude domain="sharedpref" path="settings.xml" />
+    <exclude domain="sharedpref" path="packet_logs.xml" />
     <!--
    <include domain="sharedpref" path="."/>
    <exclude domain="sharedpref" path="device.xml"/>

@@ -18,16 +18,9 @@
 
 package me.kavishdevar.librepods.core.bluetooth.att.types
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import me.kavishdevar.librepods.core.bluetooth.att.ATTHandle
-import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import kotlin.time.Duration.Companion.milliseconds
 
 data class TransparencySettings(
     val enabled: Boolean,
@@ -45,6 +38,13 @@ data class TransparencySettings(
     val balance: Float,
     val ownVoiceAmplification: Float? = null
 ) {
+    fun withAmplification(amplification: Float = netAmplification, balance: Float = this.balance) = copy(
+        leftAmplification = amplification - balance / 2,
+        rightAmplification = amplification + balance / 2,
+        netAmplification = amplification,
+        balance = balance
+    )
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -85,8 +85,10 @@ data class TransparencySettings(
 }
 
 fun parseTransparencySettingsResponse(data: ByteArray): TransparencySettings? {
-    if (data.size < 50) return null // 50 is arbitrary, too lazy to count
+    if (data.size < 100 || data.size in 101..103) return null
     val buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN)
+    val floatBytes = if (data.size >= 104) 104 else 100
+    if ((0 until floatBytes step 4).any { !buffer.getFloat(it).isFinite() }) return null
 
     val enabled = buffer.float
 
@@ -117,10 +119,9 @@ fun parseTransparencySettingsResponse(data: ByteArray): TransparencySettings? {
         null
     }
 
-    val avg = (leftAmplification + rightAmplification) / 2
-    val amplification = avg.coerceIn(-1f, 1f)
+    val avg = leftAmplification / 2 + rightAmplification / 2
     val diff = rightAmplification - leftAmplification
-    val balance = diff.coerceIn(-1f, 1f)
+    if (!diff.isFinite()) return null
 
     return TransparencySettings(
         enabled = enabled > 0.5f,
@@ -134,49 +135,59 @@ fun parseTransparencySettingsResponse(data: ByteArray): TransparencySettings? {
         rightConversationBoost = rightConversationBoost,
         leftAmbientNoiseReduction = leftAmbientNoiseReduction,
         rightAmbientNoiseReduction = rightAmbientNoiseReduction,
-        netAmplification = amplification,
-        balance = balance,
+        netAmplification = avg,
+        balance = diff,
         ownVoiceAmplification = ownVoiceAmplification
     )
 }
 
-private var debounceJob: Job? = null
+fun sendTransparencySettings(
+    currentData: ByteArray,
+    transparencySettings: TransparencySettings,
+    writer: (ATTHandle, ByteArray) -> Unit
+) {
+    val original = parseTransparencySettingsResponse(currentData) ?: return
+    if (transparencySettings.leftEQ.size != 8 || transparencySettings.rightEQ.size != 8 ||
+        (transparencySettings.ownVoiceAmplification != null && currentData.size < 104)
+    ) return
+    val buffer = ByteBuffer.wrap(currentData.copyOf()).order(ByteOrder.LITTLE_ENDIAN)
 
-fun sendTransparencySettings(writer: (ATTHandle, ByteArray) -> Unit, transparencySettings: TransparencySettings) {
-    debounceJob?.cancel()
-    debounceJob = CoroutineScope(Dispatchers.IO).launch {
-        delay(100.milliseconds)
-        try {
-            val buffer = ByteBuffer.allocate(
-                if (transparencySettings.ownVoiceAmplification != null) 104 else 100
-            ).order(ByteOrder.LITTLE_ENDIAN)
-
-            buffer.putFloat(if (transparencySettings.enabled) 1.0f else 0.0f)
-
-            for (eq in transparencySettings.leftEQ) {
-                buffer.putFloat(eq)
-            }
-            buffer.putFloat(transparencySettings.leftAmplification)
-            buffer.putFloat(transparencySettings.leftTone)
-            buffer.putFloat(if (transparencySettings.leftConversationBoost) 1.0f else 0.0f)
-            buffer.putFloat(transparencySettings.leftAmbientNoiseReduction)
-
-            for (eq in transparencySettings.rightEQ) {
-                buffer.putFloat(eq)
-            }
-            buffer.putFloat(transparencySettings.rightAmplification)
-            buffer.putFloat(transparencySettings.rightTone)
-            buffer.putFloat(if (transparencySettings.rightConversationBoost) 1.0f else 0.0f)
-            buffer.putFloat(transparencySettings.rightAmbientNoiseReduction)
-
-            if (transparencySettings.ownVoiceAmplification != null) {
-                buffer.putFloat(transparencySettings.ownVoiceAmplification)
-            }
-
-            val data = buffer.array()
-            writer(ATTHandle.TRANSPARENCY, data)
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
+    if (transparencySettings.enabled != original.enabled) {
+        buffer.putFloat(0, if (transparencySettings.enabled) 1.0f else 0.0f)
     }
+    buffer.position(4)
+
+    for (eq in transparencySettings.leftEQ) {
+        buffer.putFloat(eq)
+    }
+    buffer.putFloat(transparencySettings.leftAmplification)
+    buffer.putFloat(transparencySettings.leftTone)
+    if (transparencySettings.leftConversationBoost != original.leftConversationBoost) {
+        buffer.putFloat(44, if (transparencySettings.leftConversationBoost) 1.0f else 0.0f)
+    }
+    buffer.position(48)
+    buffer.putFloat(transparencySettings.leftAmbientNoiseReduction)
+
+    for (eq in transparencySettings.rightEQ) {
+        buffer.putFloat(eq)
+    }
+    buffer.putFloat(transparencySettings.rightAmplification)
+    buffer.putFloat(transparencySettings.rightTone)
+    if (transparencySettings.rightConversationBoost != original.rightConversationBoost) {
+        buffer.putFloat(92, if (transparencySettings.rightConversationBoost) 1.0f else 0.0f)
+    }
+    buffer.position(96)
+    buffer.putFloat(transparencySettings.rightAmbientNoiseReduction)
+
+    if (transparencySettings.ownVoiceAmplification != null) {
+        buffer.putFloat(transparencySettings.ownVoiceAmplification)
+    }
+
+    val data = buffer.array()
+    if (parseTransparencySettingsResponse(data) != null) writer(ATTHandle.TRANSPARENCY, data)
+}
+
+fun disableCustomizedTransparency(currentData: ByteArray, writer: (ATTHandle, ByteArray) -> Unit) {
+    val settings = parseTransparencySettingsResponse(currentData) ?: return
+    if (settings.enabled) sendTransparencySettings(currentData, settings.copy(enabled = false), writer)
 }

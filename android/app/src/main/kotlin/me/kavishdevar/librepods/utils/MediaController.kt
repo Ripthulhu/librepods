@@ -21,6 +21,7 @@
 package me.kavishdevar.librepods.utils
 
 import android.content.SharedPreferences
+import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.AudioPlaybackConfiguration
 import android.os.Handler
@@ -32,7 +33,12 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 
 // TODO: fragile play/pause, don't refactor unless needed. userPlayedMedia and iPaused etc. probably should not be here
 object MediaController {
-    private var initialVolume: Int? = null
+    private val conversationVolume = ConversationVolume()
+    private var volumeTransition: Runnable? = null
+    private var conversationAddress: String? = null
+    private var conversationPausedMedia = false
+    private var microphoneCaptureActive = false
+    private val mediaAttributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build()
     private lateinit var audioManager: AudioManager
     var iPausedTheMedia = false
     var userPlayedTheMedia = false
@@ -311,90 +317,100 @@ object MediaController {
         }
     }
 
-//    @Synchronized
-//    fun startSpeaking() {
-//        Log.d("MediaController", "Starting speaking max vol: ${audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)}, current vol: ${audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)}, conversationAwarenessVolume: $conversationAwarenessVolume, relativeVolume: $relativeVolume")
-//
-//        if (initialVolume == null) {
-//            initialVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-//            Log.d("MediaController", "Initial Volume: $initialVolume")
-//            val targetVolume = if (relativeVolume) {
-//                (initialVolume!! * conversationAwarenessVolume / 100)
-//            } else if (initialVolume!! > (audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC) * conversationAwarenessVolume / 100)) {
-//                (audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC) * conversationAwarenessVolume / 100)
-//            } else {
-//                initialVolume!!
-//            }
-//            smoothVolumeTransition(initialVolume!!, targetVolume)
-//            if (conversationAwarenessPauseMusic) {
-//                sendPause(force = true)
-//            }
-//        }
-//        Log.d("MediaController", "Initial Volume: $initialVolume")
-//    }
-
-//    @Synchronized
-//    fun stopSpeaking() {
-//        Log.d("MediaController", "Stopping speaking, initialVolume: $initialVolume")
-//        if (initialVolume != null) {
-//            smoothVolumeTransition(audioManager.getStreamVolume(AudioManager.STREAM_MUSIC), initialVolume!!)
-//            if (conversationAwarenessPauseMusic) {
-//                sendPlay()
-//            }
-//            initialVolume = null
-//        }
-//    }
-
     @Synchronized
-    fun setVolume(volumePercent: Int) {
-        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        val targetVolume = maxVolume * volumePercent / 100
-
-        smoothVolumeTransition(
-            audioManager.getStreamVolume(AudioManager.STREAM_MUSIC),
-            targetVolume,
-        )
+    fun setMicrophoneCaptureActive(active: Boolean) {
+        microphoneCaptureActive = active
+        if (active) conversationVolume.owner?.let { cancelConversation(it) }
     }
 
     @Synchronized
-    fun startSpeaking() {
-        if (initialVolume == null) {
-            initialVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+    fun startSpeaking(stage: Int, owner: Any, address: String, percent: Int, relative: Boolean, pauseMusic: Boolean, reducedPercent: Int) {
+        if (stage !in 1..3 || (stage != 1 && (!conversationVolume.owns(owner) || !conversationVolume.speaking))) return
+        if (!conversationVolume.owns(owner)) {
+            conversationVolume.owner?.let { cancelConversation(it, restoreVolume = false) }
         }
-
-        Log.d(
-            "MediaController",
-            "Starting speaking, initial volume: $initialVolume",
-        )
+        if (!isConversationRoute(address)) {
+            cancelConversation(owner, restoreVolume = false)
+            return
+        }
+        conversationAddress = address
+        val first = !conversationVolume.speaking
+        if (!conversationVolume.begin(audioManager.getStreamVolume(AudioManager.STREAM_MUSIC),
+            audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
+            percent, relative, stage, owner, microphoneCaptureActive, reducedPercent)) return
+        runVolumeTransition(owner)
+        if (first && pauseMusic) {
+            conversationPausedMedia = audioManager.isMusicActive
+            sendPause(force = true)
+        }
     }
-
 
     @Synchronized
-    fun stopSpeaking() {
-        val original = initialVolume ?: return
-
-        smoothVolumeTransition(
-            audioManager.getStreamVolume(AudioManager.STREAM_MUSIC),
-            original,
-        )
-
-        initialVolume = null
+    fun stopSpeaking(owner: Any) {
+        if (!conversationVolume.owns(owner)) return
+        if (!isConversationRoute(conversationAddress)) {
+            cancelConversation(owner, restoreVolume = false)
+            return
+        }
+        val wasSpeaking = conversationVolume.speaking
+        if (conversationVolume.end(audioManager.getStreamVolume(AudioManager.STREAM_MUSIC), owner)) runVolumeTransition(owner)
+        if (wasSpeaking && conversationPausedMedia) {
+            conversationPausedMedia = false
+            if (!audioManager.isMusicActive) sendPlay()
+            iPausedTheMedia = false
+        }
     }
 
-    private fun smoothVolumeTransition(fromVolume: Int, toVolume: Int) {
-        Log.d("MediaController", "Smooth volume transition from $fromVolume to $toVolume")
-        val step = if (fromVolume < toVolume) 1 else -1
-        val delay = 50L
-        var currentVolume = fromVolume
+    /** Retiring a transport must never resume media or restore another route's volume. */
+    @Synchronized
+    fun cancelConversation(owner: Any, restoreVolume: Boolean = true) {
+        if (!conversationVolume.owns(owner)) return
+        volumeTransition?.let(handler::removeCallbacks)
+        volumeTransition = null
+        val current = runCatching { audioManager.getStreamVolume(AudioManager.STREAM_MUSIC) }.getOrNull()
+        val restore = conversationVolume.cancel(current ?: -1, owner,
+            restoreAllowed = restoreVolume && current != null && isConversationRoute(conversationAddress))
+        restore?.let {
+            runCatching {
+                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
+                    it.coerceAtMost(audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)), 0)
+            }.onFailure { error -> Log.w("MediaController", "Could not restore conversation volume", error) }
+        }
+        conversationAddress = null
+        if (conversationPausedMedia) iPausedTheMedia = false
+        conversationPausedMedia = false
+    }
 
-        handler.post(object : Runnable {
-            override fun run() {
-                if (currentVolume != toVolume) {
-                    currentVolume += step
-                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, currentVolume, 0)
-                    handler.postDelayed(this, delay)
+    private fun isConversationRoute(address: String?): Boolean = address != null && runCatching {
+        audioManager.getAudioDevicesForAttributes(mediaAttributes).singleOrNull()?.address
+            ?.equals(address, ignoreCase = true) == true
+    }.getOrDefault(false)
+
+    private fun runVolumeTransition(owner: Any) {
+        volumeTransition?.let(handler::removeCallbacks)
+        volumeTransition = object : Runnable {
+            override fun run() = synchronized(this@MediaController) {
+                if (volumeTransition !== this) return@synchronized
+                if (!isConversationRoute(conversationAddress)) {
+                    cancelConversation(owner, restoreVolume = false)
+                    return@synchronized
+                }
+                try {
+                    val next = conversationVolume.step(audioManager.getStreamVolume(AudioManager.STREAM_MUSIC), owner)
+                    if (next != null) {
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, next, 0)
+                        handler.postDelayed(this, 50)
+                    } else if (conversationVolume.speaking) {
+                        // Keep observing manual volume and route changes after reaching the ducked level.
+                        handler.postDelayed(this, 250)
+                    } else {
+                        volumeTransition = null
+                    }
+                } catch (error: RuntimeException) {
+                    Log.w("MediaController", "Could not adjust conversation volume", error)
+                    cancelConversation(owner, restoreVolume = false)
                 }
             }
-        })
+        }.also(handler::post)
     }
 }

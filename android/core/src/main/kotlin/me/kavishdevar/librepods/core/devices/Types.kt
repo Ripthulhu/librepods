@@ -58,8 +58,24 @@ enum class BatteryStatus {
 data class Battery(
     val component: BatteryComponent,
     val level: Int,
-    val status: BatteryStatus
-): Parcelable
+    val status: BatteryStatus,
+    val observedAt: Long? = if (status == BatteryStatus.DISCONNECTED) null else System.currentTimeMillis(),
+    val present: Boolean = status != BatteryStatus.DISCONNECTED
+): Parcelable {
+    fun isLive(now: Long = System.currentTimeMillis()): Boolean = present && observedAt != null &&
+        now >= observedAt && now - observedAt < 90_000
+}
+
+/** Omitted components keep their age; explicitly unavailable components retain only their last percentage. */
+fun mergeBatteryReports(previous: Set<Battery>, reported: Set<Battery>, retainUnavailable: Boolean = true): Set<Battery> {
+    val merged = previous.associateBy { it.component }.toMutableMap()
+    for (battery in reported) {
+        val old = merged[battery.component]
+        merged[battery.component] = if (!battery.present && retainUnavailable && old != null)
+            old.copy(status = BatteryStatus.DISCONNECTED, present = false) else battery
+    }
+    return merged.values.toSet()
+}
 
 // TODO: use this for battery too. BatteryComponent is very redundant
 enum class DeviceComponent {

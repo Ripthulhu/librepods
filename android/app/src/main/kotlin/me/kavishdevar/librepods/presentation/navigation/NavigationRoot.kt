@@ -12,6 +12,7 @@ import me.kavishdevar.librepods.core.bluetooth.MacAddress
 import me.kavishdevar.librepods.core.devices.AppleDevice
 import me.kavishdevar.librepods.core.devices.ConnectionState
 import me.kavishdevar.librepods.core.devices.Device
+import me.kavishdevar.librepods.bluetooth.DeviceSettingsRefreshResult
 
 @Composable
 fun rememberScreenNavBackStack(vararg elements: Screen): NavBackStack<Screen> {
@@ -26,7 +27,8 @@ fun NavigationRoot(
     updatesShown: () -> Unit = {},
     showOnboarding: Boolean = false,
     onboardingComplete: () -> Unit = {},
-    devicesState: State<Map<MacAddress, Device<*, *, *>>>
+    devicesState: State<Map<MacAddress, Device<*, *, *>>>,
+    refreshDeviceSettings: suspend (AppleDevice) -> DeviceSettingsRefreshResult
 ) {
     val devices by devicesState
 
@@ -58,5 +60,6 @@ fun NavigationRoot(
         showReleaseNotes = showReleaseNotes,
         updatesShown = updatesShown,
         onboardingComplete = onboardingComplete,
+        refreshDeviceSettings = refreshDeviceSettings,
     )
 }

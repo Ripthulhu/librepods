@@ -1,3 +1,6 @@
+For this fork's Pixel/Shizuku build, upgrade notes and known limitations, see
+[Pixel fork on the Android rewrite](PIXEL-REWRITE.md).
+
 ## Root Requirement
 
 - Features requiring the VendorID hook ([the features marked with an asterisk here](https://github.com/kavishdevar/librepods#key-features)) will always require root regardless of your device/OS.

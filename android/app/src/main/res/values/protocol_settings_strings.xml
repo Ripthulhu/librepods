@@ -1,0 +1,16 @@
+<!-- shortcut: new fork text uses English fallback until translations are contributed. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="hearing_settings_read_only">These hearing settings can be viewed, but this device’s format is not supported for editing.</string>
+    <string name="att_setting_not_confirmed">The AirPods did not confirm this setting. Reconnect and try again.</string>
+    <string name="rename_not_sent">Could not send the name. Use 1-64 UTF-8 bytes, keep the AirPods connected, and try again.</string>
+    <string name="refresh_device_settings">Refresh device settings</string>
+    <string name="refresh_device_settings_busy">Refreshing settings…</string>
+    <string name="refresh_device_settings_description">Requests the latest settings from your AirPods.</string>
+    <string name="refresh_device_settings_requested">Settings requested from AirPods.</string>
+    <string name="refresh_device_settings_running">A settings refresh is already running.</string>
+    <string name="refresh_device_settings_disconnected">Connect your AirPods before refreshing settings.</string>
+    <string name="refresh_device_settings_audio_busy">Stop microphone audio and wait for audio recovery to finish.</string>
+    <string name="refresh_device_settings_call_active">End your call before refreshing settings.</string>
+    <string name="refresh_device_settings_unavailable">LibrePods is reconnecting. Try again shortly.</string>
+    <string name="refresh_device_settings_failed">Could not refresh settings. Keep your AirPods connected and try again.</string>
+</resources>

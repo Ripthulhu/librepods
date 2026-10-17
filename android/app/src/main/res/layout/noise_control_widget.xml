@@ -1,3 +1,4 @@
+<!-- RemoteViews uses framework ImageView tinting, not AppCompat attributes. -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     style="@style/Widget.LibrePods.AppWidget.Container"
@@ -5,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:theme="@style/Theme.LibrePods.AppWidgetContainer"
-    tools:ignore="ContentDescription,NestedWeights">
+    tools:ignore="ContentDescription,NestedWeights,UseAppTint">
 
     <LinearLayout
         android:id="@android:id/background"

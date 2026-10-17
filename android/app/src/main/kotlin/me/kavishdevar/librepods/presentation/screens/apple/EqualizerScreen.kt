@@ -76,6 +76,7 @@ import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.highlight.Highlight
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.drop
 import me.kavishdevar.librepods.R
 import me.kavishdevar.librepods.presentation.components.primitives.StyledButton
 import me.kavishdevar.librepods.presentation.components.primitives.StyledList
@@ -145,6 +146,7 @@ fun EqualizerScreen(
                         offsets[2].floatValue
                     )
                 }
+                    .drop(1)
                     .debounce(100.milliseconds) // nice, should've been using this since the very beginning
                     .collect { (lowF, midF, highF) ->
                         val low =

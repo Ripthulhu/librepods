@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import me.kavishdevar.librepods.R
 import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier
+import me.kavishdevar.librepods.core.devices.effectiveAllowOff
 import me.kavishdevar.librepods.core.data.StemAction
 import me.kavishdevar.librepods.presentation.components.primitives.StyledButton
 import me.kavishdevar.librepods.presentation.components.primitives.StyledList
@@ -144,7 +145,7 @@ fun LongPress(
                     title = stringResource(R.string.noise_control),
                     description = stringResource(R.string.press_and_hold_noise_control_description)
                 ) {
-                    if (state.controlStates[ControlCommandIdentifier.ALLOW_OFF_OPTION]?.get(0) == 1.toByte()) {
+                    if (state.effectiveAllowOff(settings, uiState.metadata.modelNumber) == true) {
                         styledListItem(
                             contentText = stringResource(R.string.off),
                             supportingText = stringResource(R.string.listening_mode_off_description),

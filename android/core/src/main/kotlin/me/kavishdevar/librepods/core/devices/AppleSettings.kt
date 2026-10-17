@@ -14,6 +14,8 @@ data class AppleSettings(
 
     val cacheDisconnectedComponentBattery: Boolean = true,
 
+    val allowOffChoice: Boolean? = null,
+
     val headGesturesEnabled: Boolean = true, // head_gestures_enabled
     val headGesturesVerticalOffset: Int = 30,
     val headGesturesHorizontalOffset: Int = 28,

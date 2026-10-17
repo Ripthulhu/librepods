@@ -49,7 +49,8 @@ import kotlinx.coroutines.launch
 import me.kavishdevar.librepods.R
 import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier
 import me.kavishdevar.librepods.core.bluetooth.att.types.parseTransparencySettingsResponse
-import me.kavishdevar.librepods.core.bluetooth.att.types.sendTransparencySettings
+import me.kavishdevar.librepods.core.bluetooth.att.types.disableCustomizedTransparency
+import me.kavishdevar.librepods.core.bluetooth.att.types.hearingAidSettingsWritable
 import me.kavishdevar.librepods.presentation.components.primitives.StyledConfirmationDialog
 import me.kavishdevar.librepods.presentation.components.primitives.StyledList
 import me.kavishdevar.librepods.presentation.components.primitives.StyledListItem
@@ -72,18 +73,16 @@ fun HearingAidScreen(
     val backdrop = rememberLayerBackdrop()
 
     val showDialog = remember { mutableStateOf(false) }
-    val initialLoad = remember { mutableStateOf(true) }
 
     val uiState by viewModel.uiState.collectAsState()
 
     val state = uiState.state
 
-    val hearingAidEnabled = remember {
-        val aidStatus = state.controlStates[ControlCommandIdentifier.HEARING_AID]
-        val assistStatus = state.controlStates[ControlCommandIdentifier.HEARING_ASSIST_CONFIG]
-        mutableStateOf((aidStatus?.getOrNull(1) == 0x01.toByte()) && (assistStatus?.getOrNull(0) == 0x01.toByte()))
-    }
-
+    val aidStatus = state.controlStates[ControlCommandIdentifier.HEARING_AID]
+    val assistStatus = state.controlStates[ControlCommandIdentifier.HEARING_ASSIST_CONFIG]
+    val hearingAidEnabled = aidStatus?.getOrNull(1) == 1.toByte() && assistStatus?.firstOrNull() == 1.toByte()
+    val canEnable = hearingAidSettingsWritable(state.hearingAidData) &&
+        parseTransparencySettingsResponse(state.transparencyData) != null
     StyledScaffold(
         title = stringResource(R.string.hearing_aid),
         navigateBack = navigateBack
@@ -98,35 +97,23 @@ fun HearingAidScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Spacer(modifier = Modifier.height(topPadding))
+            if (!canEnable) Text(stringResource(R.string.hearing_settings_read_only), style = MaterialTheme.typography.bodySmall)
 
 //            val mediaAssistEnabled = remember { mutableStateOf(false) }
 //            val adjustMediaEnabled = remember { mutableStateOf(false) }
 //            val adjustPhoneEnabled = remember { mutableStateOf(false) }
 
-            LaunchedEffect(hearingAidEnabled.value) {
-                if (hearingAidEnabled.value && !initialLoad.value) {
-                    showDialog.value = true
-                } else if (!hearingAidEnabled.value && !initialLoad.value) {
-                    viewModel.setControlCommand(ControlCommandIdentifier.HEARING_AID, byteArrayOf(0x01, 0x02))
-                    viewModel.setControlCommand(ControlCommandIdentifier.HEARING_ASSIST_CONFIG, 0x02.toByte())
-                    hearingAidEnabled.value = false
-                }
-                initialLoad.value = false
-            }
-
-//            fun onAdjustPhoneChange(value: Boolean) {
-//                // TODO
-//            }
-
-//            fun onAdjustMediaChange(value: Boolean) {
-//                // TODO
-//            }
-
             StyledList (title = stringResource(R.string.hearing_aid)) {
                 styledToggle(
                     label = stringResource(R.string.hearing_aid),
-                    checked = hearingAidEnabled.value,
-                    onCheckedChange = { hearingAidEnabled.value = it },
+                    checked = hearingAidEnabled,
+                    enabled = hearingAidEnabled || canEnable,
+                    onCheckedChange = { enabled ->
+                        if (enabled) showDialog.value = true else {
+                            viewModel.setControlCommand(ControlCommandIdentifier.HEARING_ASSIST_CONFIG, 2.toByte())
+                            viewModel.setControlCommand(ControlCommandIdentifier.HEARING_AID, byteArrayOf(1, 2))
+                        }
+                    },
                 )
                 styledListItem(
                     contentText = stringResource(R.string.adjustments),
@@ -196,34 +183,13 @@ fun HearingAidScreen(
         dismissText = "Cancel",
         onConfirm = {
             showDialog.value = false
-            val enrolled = state.controlStates[ControlCommandIdentifier.HEARING_AID]?.getOrNull(0) == 0x01.toByte()
-            if (!enrolled) {
-                viewModel.setControlCommand(ControlCommandIdentifier.HEARING_AID, byteArrayOf(0x01, 0x01))
-            } else {
-                viewModel.setControlCommand(ControlCommandIdentifier.HEARING_AID, byteArrayOf(0x01, 0x01))
-            }
-            viewModel.setControlCommand(ControlCommandIdentifier.HEARING_ASSIST_CONFIG, 0x01.toByte())
-            hearingAidEnabled.value = true
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    if (state.hearingAidData.isEmpty()) {
-                        Log.w(TAG, "read failed")
-                        return@launch
-                    }
-                    val parsed = parseTransparencySettingsResponse(state.hearingAidData)
-                    if (parsed == null) {
-                        Log.w(TAG, "hearingaid parse failed")
-                        return@launch
-                    }
-                    val disabledSettings = parsed.copy(enabled = false)
-                    sendTransparencySettings(viewModel::writeATTCharacteristic, disabledSettings)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error disabling hearingaid: ${e.message}")
-                }
+            if (canEnable) {
+                disableCustomizedTransparency(state.transparencyData, viewModel::writeATTCharacteristic)
+                viewModel.setControlCommand(ControlCommandIdentifier.HEARING_AID, byteArrayOf(1, 1))
+                viewModel.setControlCommand(ControlCommandIdentifier.HEARING_ASSIST_CONFIG, 1.toByte())
             }
         },
         onDismiss = {
-            hearingAidEnabled.value = false
             showDialog.value = false
         },
          backdrop = backdrop

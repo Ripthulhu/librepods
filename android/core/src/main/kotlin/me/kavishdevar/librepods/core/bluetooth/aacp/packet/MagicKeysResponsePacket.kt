@@ -1,11 +1,9 @@
 package me.kavishdevar.librepods.core.bluetooth.aacp.packet
 
-import android.util.Log
 import me.kavishdevar.librepods.core.bluetooth.aacp.types.MagicKeyType
 import me.kavishdevar.librepods.core.bluetooth.aacp.types.MessageOpcode
 import me.kavishdevar.librepods.core.devices.PacketDestination
 
-private const val TAG = "MagicKeyResponsePacket"
 
 data class MagicKeyResponsePacket(
     val magicKeys: Map<MagicKeyType, ByteArray>,
@@ -22,33 +20,30 @@ data class MagicKeyResponsePacket(
         fun parse(
             packet: ByteArray,
         ): MagicKeyResponsePacket {
+            require(packet.size in 7..4096 && packet.take(6) == listOf<Byte>(4, 0, 4, 0, 0x31, 0)) { "Invalid key response" }
             val payload = packet.copyOfRange(6, packet.size)
-            val keyCount = payload[0].toInt()
+            val count = payload[0].toInt() and 255
+            require(count <= 32) { "Too many key records" }
             val keys = mutableMapOf<MagicKeyType, ByteArray>()
             var offset = 1
-            for (i in 0 until keyCount) {
-                Log.d(TAG, "Parsing Proximity Key $i")
-                if (offset + 3 >= payload.size) {
-                    throw IllegalArgumentException("Data array too short to parse Proximity Keys Response")
-                }
-                val keyType = payload[offset]
-                val keyLength = payload[offset + 2].toInt()
-                Log.d(TAG, "Key Type: ${keyType.toString(16)}, Key Length: $keyLength")
+            repeat(count) {
+                require(payload.size - offset >= 4) { "Truncated key record" }
+                val type = (payload[offset].toInt() and 255) or ((payload[offset + 1].toInt() and 255) shl 8)
+                val length = (payload[offset + 2].toInt() and 255) or ((payload[offset + 3].toInt() and 255) shl 8)
                 offset += 4
-                if (offset + keyLength > payload.size) {
-                    throw IllegalArgumentException("Data array too short to parse Proximity Keys Response")
+                require(length <= payload.size - offset) { "Truncated key value" }
+                val kind = MagicKeyType.entries.firstOrNull { it.value.toInt() == type }
+                if (kind != null) {
+                    require(length == 16 && kind !in keys) { "Invalid or duplicate proximity key" }
+                    val key = payload.copyOfRange(offset, offset + length)
+                    require(key.any { it != 0.toByte() }) { "Invalid zero proximity key" }
+                    keys[kind] = key
                 }
-                val key = ByteArray(keyLength)
-                System.arraycopy(payload, offset, key, 0, keyLength)
-                try {
-                    keys[MagicKeyType.fromByte(keyType)] = key
-                } catch (e: Exception) {
-                    Log.e(TAG, "incorrect key type received: $keyType, ${key.toHexString()}", e)
-                }
-                offset += keyLength
-                Log.d(TAG, "Parsed Proximity Key: Type: ${keyType}, Length: $keyLength, Key: ${key.toHexString()}")
+                offset += length
             }
-
+            require(offset == payload.size) { "Trailing key response data" }
+            // A rotated IRK and encryption key must replace the previous pair together.
+            require(MagicKeyType.IRK in keys && MagicKeyType.ENC_KEY in keys) { "Incomplete proximity key pair" }
             return MagicKeyResponsePacket(keys, payload)
         }
     }

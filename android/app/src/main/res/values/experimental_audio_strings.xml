@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- shortcut: fork text uses English fallback until translations are contributed. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="experimental_audio_title">Playback and microphone</string>
+    <string name="experimental_audio_description">Ordinary Bluetooth playback stays on Android. Shizuku enables optional diagnostics and microphone routing.</string>
+    <string name="experimental_shizuku_connect">Connect Shizuku</string>
+    <string name="experimental_shizuku_connected">Shizuku connected</string>
+    <string name="experimental_audio_check">Check audio support</string>
+    <string name="experimental_audio_checking">Checking audio support…</string>
+    <string name="experimental_audio_copy_report">Copy audio report</string>
+    <string name="experimental_audio_microphone">Microphone test</string>
+    <string name="experimental_audio_clock">Tests save a private recording for up to one minute. Compare its pitch and duration, then check playback in both earbuds.</string>
+    <string name="experimental_audio_record">Record a microphone test</string>
+    <string name="experimental_audio_stop">Stop microphone and restore playback</string>
+    <string name="experimental_audio_play">Play the test recording</string>
+    <string name="experimental_audio_share">Share the test recording</string>
+    <string name="experimental_audio_target">Recording app package name</string>
+    <string name="experimental_audio_inject">Use microphone in selected app</string>
+    <string name="experimental_audio_call">Use AirPods for this call</string>
+    <string name="experimental_audio_calls_hint">Experimental cellular calls: turn off Phone calls for these AirPods, keep Media audio on, choose the phone speaker and leave mute off. Stop restores the previous route.</string>
+    <string name="experimental_audio_permission">Allow microphone access, reconnect the AirPods and tap the action again.</string>
+    <string name="experimental_audio_duration">Recording: %1$.1f seconds; elapsed: %2$.1f seconds</string>
+    <string name="experimental_audio_eld_gate">Stereo AAC-ELD playback remains blocked until the Android encoder and Bluetooth transport checks pass.</string>
+</resources>

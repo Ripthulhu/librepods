@@ -1,13 +1,10 @@
 package me.kavishdevar.librepods.core.bluetooth.aacp.packet
 
-import android.util.Log
 import me.kavishdevar.librepods.core.bluetooth.aacp.types.MessageOpcode
 import me.kavishdevar.librepods.core.devices.AirPodsModel
 import me.kavishdevar.librepods.core.devices.AirPodsSpecs
 import me.kavishdevar.librepods.core.devices.AppleMetadata
 import me.kavishdevar.librepods.core.devices.PacketDestination
-
-private const val TAG = "InformationPacket"
 
 data class InformationPacket(
     val metadata: AppleMetadata,
@@ -24,28 +21,23 @@ data class InformationPacket(
         fun parse(
             packet: ByteArray,
         ): InformationPacket {
-            val payload = packet.copyOfRange(6, packet.size)
-
-            var index = 0
-            while (index < payload.size && payload[index] != 0x00.toByte()) index++
-
-            val strings = mutableListOf<String>()
-            while (index < payload.size) {
-                // skip 0x00 bytes
-                while (index < payload.size && payload[index] == 0x00.toByte()) index++
-                if (index >= payload.size) break
-                val start = index
-                // find next 0x00 byte
-                while (index < payload.size && payload[index] != 0x00.toByte()) index++
-                val str = payload.sliceArray(start until index).decodeToString()
-                strings.add(str)
+            require(packet.size >= 11 && packet.take(6) == listOf<Byte>(4, 0, 4, 0, 0x1d, 0)) {
+                "Invalid information response"
             }
-
-            Log.i(TAG, "parse: strings: $strings")
-
-            strings.removeAt(0)
-
-            val model = AirPodsModel.fromModelNumber(strings.getOrNull(1)?: "A3063")
+            val payload = packet.copyOfRange(6, packet.size)
+            var index = 11
+            val strings = List(11) {
+                val start = index
+                while (index < packet.size && packet[index] != 0.toByte()) index++
+                require(index < packet.size) { "Unterminated information field" }
+                val raw = packet.copyOfRange(start, index++)
+                val value = raw.decodeToString()
+                require(value.toByteArray().contentEquals(raw) && value.none { Character.isISOControl(it) }) {
+                    "Invalid UTF-8 information field"
+                }
+                value
+            }
+            val model = AirPodsModel.fromModelNumber(strings[1])
 
             return InformationPacket(
                 metadata = AppleMetadata(

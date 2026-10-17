@@ -12,7 +12,11 @@ data class RenamePacket(
 
     override val opcode = MessageOpcode.RENAME
 
-    override val payload: ByteArray = byteArrayOf(0x01, name.length.toByte()) + name.toByteArray() + byteArrayOf(0x00)
+    private val encodedName = name.toByteArray(Charsets.UTF_8).also {
+        require(name.isNotBlank() && name.none { character -> Character.isISOControl(character) } &&
+            it.size in 1..64 && it.decodeToString() == name) { "Name must contain 1–64 UTF-8 bytes without control characters" }
+    }
+    override val payload: ByteArray = byteArrayOf(0x01, encodedName.size.toByte(), 0x00) + encodedName
 
     companion object {
         fun create(

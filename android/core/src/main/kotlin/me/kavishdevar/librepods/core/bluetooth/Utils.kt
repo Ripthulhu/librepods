@@ -83,6 +83,8 @@ fun createBluetoothSocket(
  * @return true if the address is verified as an RPA matching the IRK
  */
 fun verifyRPA(addr: String, irk: ByteArray): Boolean {
+    if (irk.size != 16 || irk.all { it == 0.toByte() } || !Regex("[0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5}").matches(addr) ||
+        addr.substring(0, 2).toInt(16) and 0xc0 != 0x40) return false
     val rpa = addr.split(":").map { it.toInt(16).toByte() }.reversed().toByteArray()
     val prand = rpa.copyOfRange(3, 6)
     val hash = rpa.copyOfRange(0, 3)

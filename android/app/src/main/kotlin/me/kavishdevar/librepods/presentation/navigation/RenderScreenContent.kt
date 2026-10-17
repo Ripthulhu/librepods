@@ -1,6 +1,7 @@
 package me.kavishdevar.librepods.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -10,6 +11,8 @@ import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
 import me.kavishdevar.librepods.R
+import me.kavishdevar.librepods.LibrePodsApplication
+import me.kavishdevar.librepods.bluetooth.DeviceSettingsRefreshResult
 import me.kavishdevar.librepods.core.bluetooth.MacAddress
 import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier
 import me.kavishdevar.librepods.data.updates.updates
@@ -54,19 +57,24 @@ import me.kavishdevar.librepods.repository.HeartRateRepository
 import me.kavishdevar.librepods.repository.RecordingRepository
 
 
+@Composable
 private fun createAppleViewModelFactory(
     device: AppleDevice,
     appDataRepository: AppDataRepository,
     recordingRepository: RecordingRepository,
     heartRateRepository: HeartRateRepository
-): ViewModelProvider.Factory = viewModelFactory {
-    initializer {
-        AppleViewModel(
-            device = device,
-            appDataRepository = appDataRepository,
-            recordingRepository = recordingRepository,
-            heartRateRepository = heartRateRepository
-        )
+): ViewModelProvider.Factory {
+    val application = LocalContext.current.applicationContext as LibrePodsApplication
+    return viewModelFactory {
+        initializer {
+            AppleViewModel(
+                device = device,
+                appDataRepository = appDataRepository,
+                recordingRepository = recordingRepository,
+                heartRateRepository = heartRateRepository,
+                audioControllerProvider = { application.experimentalAudioControllers[device.macAddress] },
+            )
+        }
     }
 }
 
@@ -81,7 +89,8 @@ fun RenderScreenContent(
     heartRateRepository: HeartRateRepository,
     showReleaseNotes: Boolean,
     updatesShown: () -> Unit,
-    onboardingComplete: () -> Unit
+    onboardingComplete: () -> Unit,
+    refreshDeviceSettings: suspend (AppleDevice) -> DeviceSettingsRefreshResult
 ) {
     val navigate: (Screen) -> Unit = { target -> if (target !in backStack) backStack.add(target) } // prevents multiple clicks while transitioning
     fun navigateToPurchase() = navigate(Screen.Purchase)
@@ -135,6 +144,7 @@ fun RenderScreenContent(
 
             AppleSettingsRoute(
                 viewModel = appleViewModel,
+                refreshDeviceSettings = refreshDeviceSettings,
                 navigateBack = navigateBack,
                 navigateToRename = { navigate(Screen.Rename(screen.macAddress)) },
                 navigateToHearingProtection = { navigate(Screen.HearingProtection(screen.macAddress)) },

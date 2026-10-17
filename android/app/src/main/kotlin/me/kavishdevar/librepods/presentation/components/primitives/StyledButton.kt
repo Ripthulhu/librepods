@@ -311,6 +311,7 @@ half4 main(float2 coord) {
                         }
                     )
                     .clickable(
+                        enabled = enabled,
                         interactionSource = null,
                         indication = null,
                         role = Role.Button,
@@ -386,12 +387,11 @@ half4 main(float2 coord) {
                                 }
                             }
                         } else {
-                            Modifier.pointerInput(Unit) {
+                            Modifier.pointerInput(enabled, onClick) {
                                 detectTapGestures(
                                     onPress = {
                                         isPressed = true
-                                        tryAwaitRelease()
-                                        isPressed = false
+                                        try { tryAwaitRelease() } finally { isPressed = false }
                                     },
                                     onTap = {
                                         if (enabled) {

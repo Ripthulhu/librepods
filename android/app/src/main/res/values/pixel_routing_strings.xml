@@ -1,0 +1,5 @@
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="pixel_microphone_title">AirPods microphone</string>
+    <string name="pixel_microphone_active">Microphone is active</string>
+    <string name="pixel_microphone_stop">Stop microphone</string>
+</resources>

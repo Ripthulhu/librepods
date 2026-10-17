@@ -19,11 +19,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import me.kavishdevar.librepods.core.bluetooth.MacAddress
 import me.kavishdevar.librepods.core.bluetooth.aacp.AACPManager
-import me.kavishdevar.librepods.core.bluetooth.aacp.rtbuddy.proto.SensorServiceType
 import me.kavishdevar.librepods.core.bluetooth.aacp.types.AppleEvent
 import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier
 import me.kavishdevar.librepods.core.bluetooth.att.ATTHandle
 import me.kavishdevar.librepods.core.bluetooth.att.ATTManager
+import me.kavishdevar.librepods.core.bluetooth.att.types.hearingAidSettingsWritable
 import me.kavishdevar.librepods.core.data.StemAction
 import me.kavishdevar.librepods.core.data.apple.BuddyState
 import me.kavishdevar.librepods.core.data.audio.MicrophoneFrame
@@ -70,9 +70,39 @@ class AppleDevice(
     override val connectionNumber = _connectionNumber.asStateFlow()
 
     fun loadInitialState(state: AppleState, settings: AppleSettings, metadata: AppleMetadata) {
-        _state.value = state
+        _state.value = state.copy(aacpPackets = retainedPacketHistory(state.aacpPackets),
+            controlStates = state.cachedControlStates(settings, metadata.modelNumber))
         _settings.value = settings
         _metadata.value = metadata
+    }
+
+    fun receiveNearbyBattery(batteries: Set<Battery>) {
+        synchronized(aacp) {
+            val keepLive = connectionState.value == ConnectionState.CONNECTED && aacp.captureAudioSocket() != null
+            val now = System.currentTimeMillis()
+            _state.update { state ->
+                // shortcut: keep all live slots; add source arbitration if live BLE refresh is needed during AACP.
+                val reported = if (!keepLive) batteries else batteries.filter { incoming ->
+                    incoming.isLive(now) && incoming.status != BatteryStatus.UNKNOWN &&
+                        incoming.level in 0..100 && state.battery.none { old ->
+                            old.component == incoming.component && old.level in 0..100 &&
+                                old.status != BatteryStatus.UNKNOWN && old.isLive(now)
+                        }
+                }.toSet()
+                state.copy(battery = mergeBatteryReports(state.battery, reported,
+                    settings.value.cacheDisconnectedComponentBattery))
+            }
+            _connectionState.update { if (it == ConnectionState.DISCONNECTED) ConnectionState.AVAILABLE else it }
+        }
+    }
+
+    fun expireNearbyBattery(now: Long) {
+        if (connectionState.value == ConnectionState.CONNECTED) return
+        _state.update { state -> state.copy(battery = state.battery.map {
+            if (it.present && !it.isLive(now)) it.copy(status = BatteryStatus.DISCONNECTED, present = false) else it
+        }.toSet()) }
+        if (_state.value.battery.none { it.isLive(now) })
+            _connectionState.update { if (it == ConnectionState.AVAILABLE) ConnectionState.DISCONNECTED else it }
     }
 
     // exists because audio processing is done by Service and other parts use Device as source of truth for microphone state and I didn't want to make whole updateState public
@@ -89,7 +119,10 @@ class AppleDevice(
     internal inline fun updateState(
         transform: (AppleState) -> AppleState
     ) {
-        _state.update(transform)
+        _state.update { current ->
+            val next = transform(current)
+            next.copy(aacpPackets = retainedPacketHistory(next.aacpPackets))
+        }
     }
 
     internal inline fun updateMetadata(
@@ -102,6 +135,16 @@ class AppleDevice(
         transform: (AppleSettings) -> AppleSettings
     ) {
         _settings.update(transform)
+    }
+
+    /** Call only inside the successful write's current-transport publication. */
+    internal fun rememberAllowOffRequest(value: ByteArray, previousReport: ByteArray?) {
+        _settings.update { it.withAllowOffRequest(metadata.value.modelNumber, state.value, value, previousReport) }
+    }
+
+    /** A fresh report also replaces a silent choice for the next reconnect. */
+    internal fun rememberAllowOffReport(value: ByteArray) {
+        _settings.update { it.withAllowOffReport(metadata.value.modelNumber, value) }
     }
 
     internal suspend fun emitEvent(event: AppleEvent) {
@@ -181,10 +224,22 @@ class AppleDevice(
         }
     }
 
-    fun setControlCommand(identifier: ControlCommandIdentifier, value: ByteArray): Boolean = aacp.sendControlCommand(identifier.value, value)
-    fun setControlCommand(identifier: ControlCommandIdentifier, value: Byte): Boolean = aacp.sendControlCommand(identifier.value, value)
-    fun setControlCommand(identifier: ControlCommandIdentifier, value: Int): Boolean = aacp.sendControlCommand(identifier.value, value)
-    fun setControlCommand(identifier: ControlCommandIdentifier, value: Boolean): Boolean = aacp.sendControlCommand(identifier.value, value)
+    internal fun onAacpDisconnected() {
+        recordingHandler?.invoke(null)
+        _connectionState.value = ConnectionState.DISCONNECTED
+    }
+
+    fun setControlCommand(identifier: ControlCommandIdentifier, value: ByteArray): Boolean {
+        val enablesHearing = (identifier == ControlCommandIdentifier.HEARING_AID && value.getOrNull(1) == 1.toByte()) ||
+            (identifier == ControlCommandIdentifier.HEARING_ASSIST_CONFIG && value.firstOrNull() == 1.toByte())
+        if (enablesHearing && !hearingAidSettingsWritable(state.value.hearingAidData)) return false
+        return aacp.sendControlCommand(identifier.value, value)
+    }
+    fun setControlCommand(identifier: ControlCommandIdentifier, value: Byte): Boolean = setControlCommand(identifier, byteArrayOf(value))
+    fun setControlCommand(identifier: ControlCommandIdentifier, value: Int): Boolean =
+        value in 0..255 && setControlCommand(identifier, byteArrayOf(value.toByte()))
+    fun setControlCommand(identifier: ControlCommandIdentifier, value: Boolean): Boolean =
+        setControlCommand(identifier, if (value) byteArrayOf(1) else byteArrayOf(2))
 
     suspend fun writeATTCharacteristic(handle: ATTHandle, value: ByteArray): Boolean {
         val success = att.writeCharacteristic(handle, value)
@@ -223,7 +278,7 @@ class AppleDevice(
     }
 
     fun startRecording(recording: Recording) {
-        requestMicrophoneStream()
+        if (recordingHandler?.invoke(recording) != true) return
         updateState {
             it.copy(
                 recordingState = RecordingState(
@@ -234,7 +289,7 @@ class AppleDevice(
         }
     }
     fun stopRecording() {
-        endMicrophoneStream()
+        recordingHandler?.invoke(null)
         updateState {
             it.copy(
                 recordingState = RecordingState(
@@ -244,6 +299,13 @@ class AppleDevice(
                 microphoneState = MicrophoneState(),
             )
         }
+    }
+
+    /** The application owns permission, foreground access, decoding and playback recovery. */
+    var recordingHandler: ((Recording?) -> Boolean)? = null
+
+    fun updateRecordingState(transform: (RecordingState) -> RecordingState) {
+        updateState { it.copy(recordingState = transform(it.recordingState)) }
     }
 
     fun toggleListeningMode(modeBit: Int) {
@@ -263,54 +325,21 @@ class AppleDevice(
         }
     }
 
-    fun renameDevice(newName: String) {
-        aacp.sendRename(newName)
-        _metadata.update {
-            it.copy(name = newName)
-        }
-    }
+    fun renameDevice(newName: String): Boolean = aacp.sendRename(newName)
 
     fun startHeadTracking() {
-        val sensorServiceType = when (metadata.value.model) {
-            AirPodsModel.AIRPODS_5,
-            AirPodsModel.AIRPODS_5_WCC -> {
-                SensorServiceType.CMA_COMMAND
-            }
-            else -> {
-                if (metadata.value.version3.ifBlank { "8" }.first().digitToInt() >= 8) SensorServiceType.DEVMOTION6 else SensorServiceType.ACTIVITY
-            }
-        }
-        aacp.setSensorServiceReportInterval(
-            sensorServiceType = sensorServiceType,
-            interval = _settings.value.headTrackingInterval
-        )
-        _state.update {
-            it.copy(
-                headTrackingState = BuddyState.WAITING
-            )
-        }
+        aacp.setHeadTrackingEnabled(true)
     }
 
     fun stopHeadTracking() {
-        val sensorServiceType = when (metadata.value.model) {
-            AirPodsModel.AIRPODS_5,
-            AirPodsModel.AIRPODS_5_WCC -> {
-                SensorServiceType.DEVMOTION6
-            }
-            else -> {
-                if (metadata.value.version3.ifBlank { "8" }.first().digitToInt() >= 8) SensorServiceType.DEVMOTION6 else SensorServiceType.ACTIVITY
-            }
-        }
-        aacp.setSensorServiceReportInterval(
-            sensorServiceType = sensorServiceType,
-            interval = Duration.ZERO
-        )
-        _state.update {
-            it.copy(
-                headTrackingState = BuddyState.INACTIVE,
-            )
-        }
+        aacp.setHeadTrackingEnabled(false)
+        HeadTracking.reset()
         gestureDetector.stopDetection()
+    }
+
+    /** Pause sensor transport while the HQ microphone owns it; preserve user sensor intent. */
+    fun setSensorsSuspended(suspended: Boolean) {
+        aacp.setSensorsSuspended(suspended)
     }
 
     // TODO: multiple callbacks
@@ -341,51 +370,24 @@ class AppleDevice(
     }
 
     fun setHeadTrackingInterval(interval: Duration) {
-        startHeadTracking()
-        _settings.update {
-            it.copy(headTrackingInterval = interval)
-        }
+        _settings.update { it.copy(headTrackingInterval = interval) }
+        // Captured native service uses 20 ms; the recognized legacy layout uses 40 ms.
     }
 
     fun setCustomEqEnabled(enabled: Boolean) {
-        aacp.setCustomEq(_state.value.customEq.copy(state = if(enabled) 2 else 1))
+        aacp.setCustomEq((_state.value.requestedCustomEq ?: _state.value.customEq).copy(state = if(enabled) 2 else 1))
     }
 
     fun setCustomEq(low: Int, mid: Int, high: Int) {
         require(low in 0..100)
         require(mid in 0..100)
         require(high in 0..100)
-        aacp.setCustomEq(_state.value.customEq.copy(low = low, mid = mid, high = high))
+        aacp.setCustomEq((_state.value.requestedCustomEq ?: _state.value.customEq).copy(low = low, mid = mid, high = high))
     }
 
-    // AACPManager sets hrmActive true when a valid reading is received
-    fun startHr(): Boolean {
-        val success = aacp.setSensorServiceReportInterval(
-            sensorServiceType = if (metadata.value.version3.ifBlank { "8" }.first().digitToInt() >= 9) SensorServiceType.HEARTRATE_COMMAND else SensorServiceType.HEARTRATE,
-            interval = 1.seconds
-        )
-        if (success) {
-            _state.update {
-                it.copy(
-                    hrmState = BuddyState.WAITING
-                )
-            }
-        }
-        return success
-    }
-    fun stopHr(): Boolean {
-        val success = aacp.setSensorServiceReportInterval(
-            sensorServiceType = if (metadata.value.version3.ifBlank { "8" }.first().digitToInt() >= 9) SensorServiceType.HEARTRATE_COMMAND else SensorServiceType.HEARTRATE,
-            interval = Duration.ZERO
-        )
-        if (state.value.hrmState != BuddyState.INACTIVE && success) _state.update {
-            it.copy(
-                hrmState = BuddyState.INACTIVE,
-                currentHeartRate = null
-            )
-        }
-        return success
-    }
+    // ACTIVE is reported only after a validated sample, never after a successful write alone.
+    fun startHr(): Boolean = aacp.setHeartRateEnabled(true)
+    fun stopHr(): Boolean = aacp.setHeartRateEnabled(false)
 
     fun sendRawPacket(data: ByteArray): Boolean = aacp.sendRawPacket(data)
 

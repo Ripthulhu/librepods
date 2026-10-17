@@ -49,7 +49,7 @@ data class RTBuddyPacket(
                 (payload[4].toInt() and 0xFF) or
                     ((payload[5].toInt() and 0xFF) shl 8)
 
-            require(payload.size >= 6 + length) {
+            require(length <= 16_384 && payload.size == 6 + length) {
                 "RTBuddy payload truncated: expected $length bytes, got ${payload.size - 6}"
             }
 
@@ -58,8 +58,12 @@ data class RTBuddyPacket(
 
             val rtBuddyPayload: RTBuddyPayload = when (descriptor) {
                 RTBuddyDescriptor.SENSOR_DATA_WX -> {
+                    val trailer = data.size >= 2 && data[data.size - 1] == 0xff.toByte() &&
+                        data[data.size - 2] == 0xff.toByte()
+                    val decoded = SensorDataWX.parseFrom(if (trailer) data.copyOf(data.size - 2) else data)
+                    require((decoded.logType == 5) == trailer) { "Unexpected SensorDataWX trailer" }
                     SensorDataWxBuddyPayload(
-                        data = SensorDataWX.parseFrom(data),
+                        data = decoded,
                     )
                 }
 
@@ -84,7 +88,8 @@ data class RTBuddyPacket(
         ): RTBuddyPacket {
             val data = when (rtBuddyPayload) {
                 is SensorDataWxBuddyPayload ->
-                    rtBuddyPayload.data.toByteArray()
+                    rtBuddyPayload.data.toByteArray() +
+                        if (rtBuddyPayload.data.logType == 5) byteArrayOf(0xff.toByte(), 0xff.toByte()) else byteArrayOf()
 
                 is UnknownBuddyPayload ->
                     rtBuddyPayload.data
@@ -98,7 +103,7 @@ data class RTBuddyPacket(
                     rtBuddyPayload.descriptorValue
             }
 
-            require(data.size <= 0xFFFF) {
+            require(data.size <= 16_384) {
                 "RTBuddy payload too large: ${data.size}"
             }
 

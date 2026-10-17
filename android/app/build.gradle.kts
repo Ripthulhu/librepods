@@ -1,7 +1,7 @@
 import java.util.Properties
 
-val appVersionName = rootProject.extra["appVersionName"] as String
-val appVersionCode = rootProject.extra["appVersionCode"] as Int
+val appVersionName = (rootProject.extra["appVersionName"] as String) + "-pixel28"
+val appVersionCode = 200000113
 
 plugins {
     alias(libs.plugins.android.application)
@@ -128,6 +128,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
     buildFeatures {
+        aidl = true
         compose = true
         viewBinding = true
         buildConfig = true
@@ -145,6 +146,10 @@ android {
         checkDependencies = false
         checkGeneratedSources = false
     }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+        unitTests.isReturnDefaultValues = true
+    }
 
     ndkVersion = "30.0.14904198"
 
@@ -152,6 +157,12 @@ android {
 }
 
 dependencies {
+    implementation("dev.rikka.shizuku:api:13.1.5")
+    implementation("dev.rikka.shizuku:provider:13.1.5")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.17")
+    testImplementation("org.mockito:mockito-core:5.21.0")
+    testImplementation("androidx.compose.ui:ui-test-junit4")
     implementation(project(":core"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.accompanist.permissions)
@@ -173,6 +184,7 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.core)
     implementation(libs.billing)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.aboutlibraries.compose)
     implementation(libs.aboutlibraries.compose.m3)
@@ -193,6 +205,24 @@ dependencies {
     implementation(libs.protobuf.kotlin)
 //    compileOnly(files("../../../framework-classes.jar"))
     implementation(libs.androidx.healthconnect.client)
+}
+
+tasks.register("verifyPixel") {
+    dependsOn(":core:testDebugUnitTest", "testFossDebugUnitTest", "lintFossDebug", "assembleFossDebug", "assembleFossRelease")
+}
+
+tasks.withType<Test>().configureEach {
+    jvmArgs(
+        "--add-opens=java.base/java.lang=ALL-UNNAMED",
+        "--add-opens=java.base/java.util=ALL-UNNAMED",
+        "--add-opens=java.base/java.io=ALL-UNNAMED",
+        "--add-opens=java.base/java.net=ALL-UNNAMED",
+        "--add-opens=java.base/java.security=ALL-UNNAMED",
+        "--add-opens=java.base/java.text=ALL-UNNAMED",
+        "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED",
+        "--add-opens=java.desktop/java.awt.font=ALL-UNNAMED",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED"
+    )
 }
 
 aboutLibraries {

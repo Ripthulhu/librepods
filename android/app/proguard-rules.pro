@@ -21,3 +21,5 @@
 #-renamesourcefileattribute SourceFile
 
 -keep class me.kavishdevar.librepods.utils.KotlinModule { *; }
+-keep class me.kavishdevar.librepods.shizuku.ShizukuAudioService { public <init>(android.content.Context); public <init>(); }
+-keep class me.kavishdevar.librepods.shizuku.ShellAudioDiagnostics { public static void main(java.lang.String[]); }

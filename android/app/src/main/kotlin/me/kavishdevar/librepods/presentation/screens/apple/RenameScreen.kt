@@ -20,6 +20,8 @@
 
 package me.kavishdevar.librepods.presentation.screens.apple
 
+import kotlinx.coroutines.delay
+
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -75,7 +77,10 @@ fun RenameScreen(
             val textFieldState = rememberTextFieldState(initialText = metadata.name)
 
             LaunchedEffect(textFieldState.text) {
-                viewModel.renameDevice(textFieldState.text.toString())
+                val name = textFieldState.text.toString()
+                if (name == metadata.name) return@LaunchedEffect
+                delay(350)
+                viewModel.renameDevice(name)
             }
 
             StyledInputField(

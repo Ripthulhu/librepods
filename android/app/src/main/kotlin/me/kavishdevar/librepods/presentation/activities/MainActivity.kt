@@ -49,6 +49,7 @@ import com.google.android.play.core.review.ReviewManagerFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import me.kavishdevar.librepods.BuildConfig
 import me.kavishdevar.librepods.LibrePodsApplication
+import me.kavishdevar.librepods.bluetooth.DeviceSettingsRefreshResult
 import me.kavishdevar.librepods.presentation.design.LibrePodsTheme
 import me.kavishdevar.librepods.presentation.design.NightTheme
 import me.kavishdevar.librepods.presentation.navigation.NavigationRoot
@@ -259,7 +260,10 @@ fun Main() {
             }
             bindService()
         },
-        devicesState = devicesState
+        devicesState = devicesState,
+        refreshDeviceSettings = { device ->
+            librepodsService.value?.refreshDeviceSettings(device) ?: DeviceSettingsRefreshResult.UNAVAILABLE
+        }
     )
 }
 

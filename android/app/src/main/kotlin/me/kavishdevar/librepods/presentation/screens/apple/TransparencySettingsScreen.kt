@@ -104,107 +104,32 @@ fun TransparencySettingsScreen(
             Spacer(modifier = Modifier.height(topPadding))
             val backgroundColor = MaterialTheme.colorScheme.surfaceContainer
 
-            val enabled = rememberSaveable { mutableStateOf(false) }
-            val amplificationSliderValue = rememberSaveable { mutableFloatStateOf(0.5f) }
-            val balanceSliderValue = rememberSaveable { mutableFloatStateOf(0.5f) }
-            val toneSliderValue = rememberSaveable { mutableFloatStateOf(0.5f) }
-            val ambientNoiseReductionSliderValue = rememberSaveable { mutableFloatStateOf(0.0f) }
-            val conversationBoostEnabled = rememberSaveable { mutableStateOf(false) }
-            val eq = rememberSaveable(
-                saver = Saver(
-                    save = { it.value.toList() },
-                    restore = { mutableStateOf(it.toFloatArray()) }
-                )
-            ) { mutableStateOf(FloatArray(8)) }
-
-//        val phoneMediaEQ = rememberSaveable(
-//            saver = Saver(
-//                save = { it.value.toList() },
-//                restore = { mutableStateOf(it.toFloatArray()) }
-//            )
-//        ) { mutableStateOf(FloatArray(8) { 0.5f }) }
-
-            val initialized = rememberSaveable { mutableStateOf(false) }
-
-            val transparencySettings = remember {
-                mutableStateOf(
-                    TransparencySettings(
-                        enabled = enabled.value,
-                        leftEQ = eq.value,
-                        rightEQ = eq.value,
-                        leftAmplification = amplificationSliderValue.floatValue + (0.5f - balanceSliderValue.floatValue) * amplificationSliderValue.floatValue * 2,
-                        rightAmplification = amplificationSliderValue.floatValue + (balanceSliderValue.floatValue - 0.5f) * amplificationSliderValue.floatValue * 2,
-                        leftTone = toneSliderValue.floatValue,
-                        rightTone = toneSliderValue.floatValue,
-                        leftConversationBoost = conversationBoostEnabled.value,
-                        rightConversationBoost = conversationBoostEnabled.value,
-                        leftAmbientNoiseReduction = ambientNoiseReductionSliderValue.floatValue,
-                        rightAmbientNoiseReduction = ambientNoiseReductionSliderValue.floatValue,
-                        netAmplification = amplificationSliderValue.floatValue,
-                        balance = balanceSliderValue.floatValue
-                    )
-                )
+            val data = state.transparencyData
+            val settings = remember(data) { mutableStateOf(parseTransparencySettingsResponse(data)) }
+            val writable = settings.value != null
+            fun updateSettings(edit: (TransparencySettings) -> TransparencySettings) {
+                val current = settings.value ?: return
+                val updated = edit(current)
+                if (updated == current) return
+                settings.value = updated
+                sendTransparencySettings(data, updated, viewModel::writeATTCharacteristic)
             }
-
-            LaunchedEffect(
-                enabled.value,
-                amplificationSliderValue.floatValue,
-                balanceSliderValue.floatValue,
-                toneSliderValue.floatValue,
-                conversationBoostEnabled.value,
-                ambientNoiseReductionSliderValue.floatValue,
-                eq.value
-            ) {
-                if (!initialized.value) return@LaunchedEffect
-                transparencySettings.value = TransparencySettings(
-                    enabled = enabled.value,
-                    leftEQ = eq.value,
-                    rightEQ = eq.value,
-                    leftAmplification = amplificationSliderValue.floatValue + if (balanceSliderValue.floatValue < 0) -balanceSliderValue.floatValue else 0f,
-                    rightAmplification = amplificationSliderValue.floatValue + if (balanceSliderValue.floatValue > 0) balanceSliderValue.floatValue else 0f,
-                    leftTone = toneSliderValue.floatValue,
-                    rightTone = toneSliderValue.floatValue,
-                    leftConversationBoost = conversationBoostEnabled.value,
-                    rightConversationBoost = conversationBoostEnabled.value,
-                    leftAmbientNoiseReduction = ambientNoiseReductionSliderValue.floatValue,
-                    rightAmbientNoiseReduction = ambientNoiseReductionSliderValue.floatValue,
-                    netAmplification = amplificationSliderValue.floatValue,
-                    balance = balanceSliderValue.floatValue
-                )
-                Log.d("TransparencySettings", "Updated settings: ${transparencySettings.value}")
-                sendTransparencySettings(viewModel::writeATTCharacteristic, transparencySettings.value)
-            }
-
-            LaunchedEffect(state.transparencyData) {
-                val parsedSettings = parseTransparencySettingsResponse(data = state.transparencyData) ?: return@LaunchedEffect
-                Log.d(TAG, "Initial transparency settings: $parsedSettings")
-                enabled.value = parsedSettings.enabled
-                amplificationSliderValue.floatValue = parsedSettings.netAmplification
-                balanceSliderValue.floatValue = parsedSettings.balance
-                toneSliderValue.floatValue = parsedSettings.leftTone
-                ambientNoiseReductionSliderValue.floatValue =
-                    parsedSettings.leftAmbientNoiseReduction
-                conversationBoostEnabled.value = parsedSettings.leftConversationBoost
-                if (!eq.value.contentEquals(parsedSettings.leftEQ)) {
-                    eq.value = parsedSettings.leftEQ.copyOf()
-                }
-                initialized.value = true
-            }
-
             if (uiState.vendorIdHook) {
                 StyledToggle(
+                    enabled = writable,
                     label = stringResource(R.string.transparency_mode),
-                    checked = enabled.value,
+                    checked = settings.value?.enabled ?: false,
                     description = stringResource(R.string.customize_transparency_mode_description),
-                    onCheckedChange = { enabled.value = it }
+                    onCheckedChange = { updateSettings { settings -> settings.copy(enabled = it) } }
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 StyledSlider(
+                    enabled = writable,
                     label = stringResource(R.string.amplification),
                     valueRange = -1f..1f,
-                    value = amplificationSliderValue.floatValue,
+                    value = (settings.value?.netAmplification ?: 0f).coerceIn(-1f, 1f),
                     onValueChange = {
-                        amplificationSliderValue.floatValue = it
+                        updateSettings { settings -> settings.withAmplification(amplification = it) }
                     },
                     startImageVector = LocalIcons.current.SpeakerMin,
                     endImageVector = LocalIcons.current.SpeakerMax,
@@ -212,11 +137,12 @@ fun TransparencySettingsScreen(
                 )
 
                 StyledSlider(
+                    enabled = writable,
                     label = stringResource(R.string.balance),
                     valueRange = -1f..1f,
-                    value = balanceSliderValue.floatValue,
+                    value = (settings.value?.balance ?: 0f).coerceIn(-1f, 1f),
                     onValueChange = {
-                        balanceSliderValue.floatValue = it
+                        updateSettings { settings -> settings.withAmplification(balance = it) }
                     },
                     snapPoints = listOf(-1f, 0f, 1f),
                     startLabel = stringResource(R.string.left),
@@ -225,11 +151,12 @@ fun TransparencySettingsScreen(
                 )
 
                 StyledSlider(
+                    enabled = writable,
                     label = stringResource(R.string.tone),
                     valueRange = -1f..1f,
-                    value = toneSliderValue.floatValue,
+                    value = (settings.value?.leftTone ?: 0f).coerceIn(-1f, 1f),
                     onValueChange = {
-                        toneSliderValue.floatValue = it
+                        updateSettings { settings -> settings.copy(leftTone = it, rightTone = it) }
                     },
                     startLabel = stringResource(R.string.darker),
                     endLabel = stringResource(R.string.brighter),
@@ -237,11 +164,12 @@ fun TransparencySettingsScreen(
                 )
 
                 StyledSlider(
+                    enabled = writable,
                     label = stringResource(R.string.ambient_noise_reduction),
                     valueRange = 0f..1f,
-                    value = ambientNoiseReductionSliderValue.floatValue,
+                    value = (settings.value?.leftAmbientNoiseReduction ?: 0f).coerceIn(0f, 1f),
                     onValueChange = {
-                        ambientNoiseReductionSliderValue.floatValue = it
+                        updateSettings { settings -> settings.copy(leftAmbientNoiseReduction = it, rightAmbientNoiseReduction = it) }
                     },
                     startLabel = stringResource(R.string.less),
                     endLabel = stringResource(R.string.more),
@@ -249,10 +177,11 @@ fun TransparencySettingsScreen(
                 )
 
                 StyledToggle(
+                    enabled = writable,
                     label = stringResource(R.string.conversation_boost),
-                    checked = conversationBoostEnabled.value,
+                    checked = settings.value?.leftConversationBoost ?: false,
                     description = stringResource(R.string.conversation_boost_description),
-                    onCheckedChange = { conversationBoostEnabled.value = it }
+                    onCheckedChange = { updateSettings { settings -> settings.copy(leftConversationBoost = it, rightConversationBoost = it) } }
                 )
 
                 Text(
@@ -271,7 +200,7 @@ fun TransparencySettingsScreen(
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     for (i in 0 until 8) {
-                        val eqValue = remember(eq.value[i]) { mutableFloatStateOf(eq.value[i]) }
+                        val eqValue = remember(settings.value?.leftEQ?.get(i)) { mutableFloatStateOf(settings.value?.leftEQ?.get(i) ?: 0f) }
                         Row(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
@@ -287,12 +216,13 @@ fun TransparencySettingsScreen(
                             )
 
                             Slider(
+                                enabled = writable,
                                 value = eqValue.floatValue,
                                 onValueChange = { newVal ->
                                     eqValue.floatValue = newVal
-                                    val newEQ = eq.value.copyOf()
-                                    newEQ[i] = eqValue.floatValue
-                                    eq.value = newEQ
+                                    updateSettings { settings -> settings.copy(
+                                        leftEQ = settings.leftEQ.copyOf().also { it[i] = newVal },
+                                        rightEQ = settings.rightEQ.copyOf().also { it[i] = newVal }) }
                                 },
                                 valueRange = 0f..100f,
                                 modifier = Modifier

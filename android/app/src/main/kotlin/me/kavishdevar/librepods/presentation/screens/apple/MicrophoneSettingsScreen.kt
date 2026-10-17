@@ -16,10 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import me.kavishdevar.librepods.R
+import me.kavishdevar.librepods.audio.ExperimentalAudioController
 import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier
 import me.kavishdevar.librepods.presentation.components.primitives.StyledList
 import me.kavishdevar.librepods.presentation.components.primitives.styledListItem
 import me.kavishdevar.librepods.presentation.components.primitives.StyledScaffold
+import me.kavishdevar.librepods.presentation.components.apple.ExperimentalAudioControls
 import me.kavishdevar.librepods.presentation.viewmodel.AppleViewModel
 
 @Composable
@@ -36,6 +38,7 @@ fun MicrophoneSettingsRoute(
     MicrophoneSettingsScreen(
         navigateBack = navigateBack,
         selectedMode = state.controlStates[id]?.getOrNull(0)?.toInt() ?: 0,
+        audioController = viewModel.audioController,
         onMicrophoneSettingsChanged = {
             viewModel.setControlCommand(id, it)
         }
@@ -46,7 +49,8 @@ fun MicrophoneSettingsRoute(
 fun MicrophoneSettingsScreen(
     navigateBack: (() -> Unit)?,
     selectedMode: Int,
-    onMicrophoneSettingsChanged: (Int) -> Unit
+    onMicrophoneSettingsChanged: (Int) -> Unit,
+    audioController: ExperimentalAudioController? = null,
 ) {
     val scrollState = rememberScrollState()
 
@@ -84,6 +88,10 @@ fun MicrophoneSettingsScreen(
                 )
             }
 
+            audioController?.let {
+                Spacer(modifier = Modifier.height(16.dp))
+                ExperimentalAudioControls(it)
+            }
             Spacer(modifier = Modifier.height(bottomPadding))
         }
     }

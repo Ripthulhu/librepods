@@ -1,0 +1,43 @@
+<!-- shortcut: new fork text uses English fallback until translations are contributed. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="battery_cached_age">Last received %1$d min ago</string>
+    <string name="pairing_nearby_hint">Then tap Connect.</string>
+    <string name="pairing_connect">Connect</string>
+    <string name="pairing_continue">Continue</string>
+    <string name="pairing_battery_buds">AirPods</string>
+    <string name="pairing_battery_unknown">—</string>
+    <string name="pairing_battery_component_value">%1$s %2$s</string>
+    <string name="pairing_double_tap_title">Double-Tap the Case</string>
+    <string name="pairing_hold_button_title">Hold the Setup Button</string>
+    <string name="pairing_connecting_title">Connecting…</string>
+    <string name="pairing_preview">Preview pairing popup</string>
+    <string name="pairing_preview_hint">Pairing preview</string>
+    <string name="pairing_preview_done">Done</string>
+    <string name="pairing_preview_permission">Allow display over other apps to preview this popup.</string>
+    <string name="pairing_double_tap">Keep both AirPods in the open case. Double-tap the front until the light flashes white.</string>
+    <string name="pairing_hold_button">Keep both AirPods in the open case. Hold the setup button until the light flashes white.</string>
+    <string name="pairing_find">Find my AirPods</string>
+    <string name="pairing_bluetooth_off">Turn on Bluetooth, then try again.</string>
+    <string name="pairing_discovery_busy">Bluetooth discovery is already running. Wait for it to finish, then retry.</string>
+    <string name="pairing_discovery_failed">Android could not start discovery. Check Bluetooth and retry.</string>
+    <string name="pairing_searching">Looking for AirPods in pairing mode…</string>
+    <string name="pairing_searching_candidate">Found %1$s (%2$s). Checking for other matching AirPods before Android pairing…</string>
+    <string name="pairing_permission_needed">Allow Nearby devices permission in LibrePods app settings, then retry.</string>
+    <string name="pairing_not_found">No matching AirPods found. Keep the lid open and make sure the light flashes white.</string>
+    <string name="pairing_choose_device">Choose your AirPods below. Nearby advertisements identify the model only; check the name and address in Android’s pairing dialog.</string>
+    <string name="pairing_device_changed">This device is already pairing or paired. Check Android Bluetooth settings.</string>
+    <string name="pairing_complete">Paired. Android is connecting your AirPods.</string>
+    <string name="pairing_bond_failed">Pairing was declined or failed. Keep the case open and try again.</string>
+    <string name="pairing_confirm_android">Complete Android’s pairing dialog for %1$s (%2$s). Closing this card stops LibrePods waiting; Android may still finish pairing.</string>
+    <string name="pairing_bond_timeout">Android has not completed pairing. Check its pairing dialog or Bluetooth settings before retrying.</string>
+    <string name="pairing_retry">Try again</string>
+    <string name="pairing_close">Close pairing invitation</string>
+    <string name="pairing_multiple_cases">Close the other AirPods cases, then keep this case open.</string>
+    <string name="pairing_confirm_system">Confirm pairing in Android if asked.</string>
+    <string name="pairing_request_timeout">Pairing timed out. Keep the case open and try again.</string>
+    <string name="island_battery_charging">Charging</string>
+    <string name="island_open_controls">Open AirPods controls</string>
+    <string name="island_battery_unavailable">Unavailable</string>
+    <string name="island_battery_description">%1$s, %2$s</string>
+    <string name="island_nearby">Nearby</string>
+</resources>

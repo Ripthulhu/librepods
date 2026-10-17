@@ -2,401 +2,174 @@ name: Android CI
 
 on:
   push:
-    branches:
-      - '**'
+    branches: ['**']
+    tags: ['v*', 'pixel-*']
     paths:
       - 'android/**'
       - '.github/workflows/ci-android.yml'
+      - '.github/scripts/android_ci_metadata.py'
   pull_request:
     paths:
       - 'android/**'
+      - '.github/workflows/ci-android.yml'
+      - '.github/scripts/android_ci_metadata.py'
   workflow_dispatch:
     inputs:
       branch:
-        description: Branch to build
+        description: Branch or commit to build
+        type: string
         required: true
-        default: main
+        default: pixel-shizuku-rewrite
+      publish_release:
+        description: Publish a signed FOSS prerelease (requires fork signing secrets)
+        type: boolean
+        default: false
+      release_tag:
+        description: New v* or pixel-* tag (required when publishing)
+        type: string
+        default: ''
   workflow_call:
+
+permissions:
+  contents: read
 
 jobs:
   build:
-    runs-on: blacksmith-8vcpu-ubuntu-2404
-    env:
-      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx16g -XX:MaxMetaspaceSize=2g -XX:+UseParallelGC" -Dkotlin.daemon.jvm.options="-Xmx6g,-XX:+UseParallelGC" -Dorg.gradle.workers.max=8'
+    runs-on: ubuntu-latest
     outputs:
-      short_sha: ${{ steps.vars.outputs.short_sha }}
-      app_version: ${{ steps.version.outputs.app_version }}
-      version_code: ${{ steps.version.outputs.version_code }}
+      commit: ${{ steps.metadata.outputs.commit }}
+      app_version: ${{ steps.metadata.outputs.app_version }}
+      publish_release: ${{ steps.metadata.outputs.publish_release }}
+      release_tag: ${{ steps.metadata.outputs.release_tag }}
     steps:
-      - uses: useblacksmith/checkout@v1
+      - uses: actions/checkout@v4
         with:
           submodules: true
-          fetch-depth: 0
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.ref }}
-      - uses: actions/setup-java@v5
+          persist-credentials: false
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.ref }}
+      - name: Validate build and release metadata
+        id: metadata
+        env:
+          REQUEST_RELEASE: ${{ inputs.publish_release || false }}
+          REQUEST_TAG: ${{ inputs.release_tag || '' }}
+        run: |
+          python3 .github/scripts/android_ci_metadata.py --self-test
+          python3 .github/scripts/android_ci_metadata.py
+      - uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 21
-
-      - name: Mount Gradle Cache
-        uses: useblacksmith/stickydisk@v1
+      - uses: gradle/actions/setup-gradle@v4
         with:
-          key: ${{ github.repository }}-android-gradle-cache
-          path: ~/.gradle
-
-      - name: Mount Native NDK CXX Cache
-        uses: useblacksmith/stickydisk@v1
-        with:
-          key: ${{ github.repository }}-android-cxx-cache
-          path: android/app/.cxx
-
-      - name: Mount Android NDK
-        uses: useblacksmith/stickydisk@v1
-        with:
-          key: ${{ github.repository }}-android-ndk
-          path: /usr/local/lib/android/sdk/ndk
-
-      - name: Decode keystore
-        if: github.event_name != 'pull_request'
-        run: echo "${{ secrets.RELEASE_KEYSTORE_FILE }}" | base64 --decode > android/release.keystore
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
-      - name: Accept Licenses
-        run: yes | sdkmanager --licenses
-      - name: Install NDK
-        run: |
-          if [ ! -d "/usr/local/lib/android/sdk/ndk/30.0.14904198" ]; then
-            sdkmanager "ndk;30.0.14904198"
-          else
-            echo "NDK 30.0.14904198 already cached on sticky disk"
-          fi
-
-      - name: Create local.properties
-        if: github.event_name != 'pull_request'
-        run: |
-          cat <<EOF > android/local.properties
-          RELEASE_STORE_FILE=../release.keystore
-          RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}
-          RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}
-          RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}
-          EOF
-      - name: Build debug APK for PRs
-        if: github.event_name == 'pull_request'
-        run: ./gradlew assembleFossDebug
+      - name: Install Android toolchain
+        run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0" "ndk;30.0.14904198"
+      - name: Test, lint and build FOSS debug APK
         working-directory: android
-      - name: Build release artifacts
-        if: github.event_name != 'pull_request'
-        run: ./gradlew collectReleaseArtifacts
-        working-directory: android
-      - name: Get app version
-        id: version
-        working-directory: android
-        run: |
-          VERSION_OUTPUT=$(./gradlew -q printAppVersion)
-          echo "$VERSION_OUTPUT" | sed -n 's/^VERSION_NAME=/app_version=/p' >> "$GITHUB_OUTPUT"
-          echo "$VERSION_OUTPUT" | sed -n 's/^VERSION_CODE=/version_code=/p' >> "$GITHUB_OUTPUT"
-      - name: Stop Gradle Daemons
-        run: ./gradlew --stop
-        working-directory: android
-      - id: vars
-        run: echo "short_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@v7
-        if: github.event_name != 'pull_request'
+        run: ./gradlew --no-daemon :app:verifyPixel
+      - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: apk-release
-          path: release/*release.apk
-
-      - uses: actions/upload-artifact@v7
-        if: github.event_name == 'pull_request'
+          name: android-check-results
+          path: |
+            android/core/build/reports/tests/
+            android/core/build/test-results/
+            android/app/build/reports/tests/
+            android/app/build/test-results/
+            android/app/build/overlay-previews/
+            android/app/build/reports/lint-results-fossDebug.*
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
         with:
           name: apk-debug
           path: android/app/build/outputs/apk/foss/debug/app-foss-debug.apk
-
-      - uses: actions/upload-artifact@v7
-        if: github.event_name != 'pull_request'
-        with:
-          name: apk-debug
-          path: release/*debug.apk
-
-      - uses: actions/upload-artifact@v7
-        if: github.event_name != 'pull_request'
-        with:
-          name: release-bundle
-          path: release/*.aab
-
-  release:
-    if: >-
-      github.event_name == 'push' &&
-      (github.ref == 'refs/heads/main' ||
-       github.ref == 'refs/heads/android/rewrite')
-    runs-on: blacksmith-8vcpu-ubuntu-2404
-    needs: build
-    permissions:
-      contents: write
-
-    steps:
-      - uses: useblacksmith/checkout@v1
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-
-      - name: Determine release tag and action type
-        id: release_check
+          if-no-files-found: error
+      - name: Prepare fork release signing
+        if: steps.metadata.outputs.publish_release == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APP_VERSION: ${{ needs.build.outputs.app_version }}
-          SHORT_SHA: ${{ needs.build.outputs.short_sha }}
+          RELEASE_KEYSTORE_FILE: ${{ secrets.RELEASE_KEYSTORE_FILE }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: |
-          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
-            NEW_TAG="v${APP_VERSION}"
-            TITLE="${NEW_TAG}"
-            DESCRIPTION="Download the latest release and debug APKs."
-          else
-            NEW_TAG="rewrite-v${APP_VERSION}"
-            TITLE="v${APP_VERSION} (rewrite)"
-            DESCRIPTION="Download rewrite testing versions. THINGS WILL BE BROKEN!"
-          fi
-
-          echo "tag=${NEW_TAG}" >> "$GITHUB_OUTPUT"
-          echo "title=${TITLE}" >> "$GITHUB_OUTPUT"
-          echo "description=${DESCRIPTION}" >> "$GITHUB_OUTPUT"
-
-          if gh release view "$NEW_TAG" &>/dev/null; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "Release $NEW_TAG already exists."
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "Release $NEW_TAG does not exist."
-          fi
-
-      - name: Download release APK
-        uses: actions/download-artifact@v8
+          python3 - <<'PY'
+          import base64, os, pathlib
+          names = ('RELEASE_KEYSTORE_FILE', 'RELEASE_STORE_PASSWORD', 'RELEASE_KEY_ALIAS', 'RELEASE_KEY_PASSWORD')
+          missing = [name for name in names if not os.environ.get(name)]
+          if missing:
+              raise SystemExit('Signed release requires fork secrets: ' + ', '.join(missing))
+          os.umask(0o077)
+          keystore = base64.b64decode(''.join(os.environ['RELEASE_KEYSTORE_FILE'].split()), validate=True)
+          if not keystore:
+              raise SystemExit('Release keystore is empty')
+          pathlib.Path('android/release.keystore').write_bytes(keystore)
+          values = {'RELEASE_STORE_FILE': '../release.keystore', **{name: os.environ[name] for name in names[1:]}}
+          def escape(value):
+              data = value.encode('utf-16-be').hex()
+              return ''.join('\\u' + data[index:index+4] for index in range(0, len(data), 4))
+          pathlib.Path('android/local.properties').write_text(''.join(f'{name}={escape(value)}\n' for name, value in values.items()))
+          PY
+          keytool -list -keystore android/release.keystore -storepass:env RELEASE_STORE_PASSWORD -alias "$RELEASE_KEY_ALIAS" >/dev/null
+      - name: Build signed FOSS release APK
+        if: steps.metadata.outputs.publish_release == 'true'
+        working-directory: android
+        run: ./gradlew --no-daemon assembleFossRelease
+      - name: Verify and checksum release APK
+        if: steps.metadata.outputs.publish_release == 'true'
+        env:
+          APP_VERSION: ${{ steps.metadata.outputs.app_version }}
+        run: |
+          mkdir -p artifacts
+          apk="artifacts/LibrePods-FOSS-v${APP_VERSION}-release.apk"
+          cp android/app/build/outputs/apk/foss/release/app-foss-release.apk "$apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk"
+          (cd artifacts && sha256sum ./*.apk > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        if: steps.metadata.outputs.publish_release == 'true'
         with:
           name: apk-release
-          path: artifacts/apk-release
+          path: artifacts/*
+          if-no-files-found: error
+      - name: Remove signing material
+        if: always()
+        run: rm -f -- android/release.keystore android/local.properties
 
-      - name: Download debug APK
-        uses: actions/download-artifact@v8
+  release:
+    if: needs.build.outputs.publish_release == 'true'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
         with:
-          name: apk-debug
-          path: artifacts/apk-debug
-
-      - name: Find previous release
-        id: prev
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CURRENT_TAG: ${{ steps.release_check.outputs.tag }}
-        run: |
-          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
-            TAG=$(gh release list --limit 1000 --json tagName -q 'first(.[] | select((.tagName | startswith("v")) and .tagName != env.CURRENT_TAG) | .tagName) // empty')
-          else
-            TAG=$(gh release list --limit 1000 --json tagName -q 'first(.[] | select((.tagName | startswith("rewrite-")) and .tagName != env.CURRENT_TAG) | .tagName) // empty')
-          fi
-
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-      - name: Get previous version code from latest matching release
-        id: prev_code
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
-            PREV_TAG=$(gh release list --limit 50 --json tagName -q 'first(.[] | select(.tagName | startswith("v")) | .tagName) // empty')
-          else
-            PREV_TAG=$(gh release list --limit 50 --json tagName -q 'first(.[] | select(.tagName | startswith("rewrite-")) | .tagName) // empty')
-          fi
-
-          if [ -n "$PREV_TAG" ]; then
-            ASSETS=$(gh release view "$PREV_TAG" --json assets -q '.assets[].name')
-            PREV_CODE=$(echo "$ASSETS" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+-([0-9]+)-' | sed -E 's/v[0-9]+\.[0-9]+\.[0-9]+-([0-9]+)-/\1/' | head -n 1)
-
-            if [ -n "$PREV_CODE" ]; then
-              echo "previous_code=$PREV_CODE" >> "$GITHUB_OUTPUT"
-              echo "Previous version code for $PREV_TAG: $PREV_CODE"
-            fi
-          fi
-      - name: Generate changelog
-        id: changelog
-        env:
-          PREVIOUS_TAG: ${{ steps.prev.outputs.tag }}
-        run: |
-          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
-            if [ -z "$PREVIOUS_TAG" ]; then
-              NOTES=$(git log --pretty=format:"- %s ([%h](https://github.com/kavishdevar/librepods/commit/%H))")
-            else
-              NOTES=$(git log "${PREVIOUS_TAG}..HEAD" --pretty=format:"- %s ([%h](https://github.com/kavishdevar/librepods/commit/%H))")
-            fi
-          else
-            if [ -z "$PREVIOUS_TAG" ]; then
-              RANGE="HEAD"
-            else
-              RANGE="${PREVIOUS_TAG}..HEAD"
-            fi
-
-            NOTES=$(git log "$RANGE" \
-              --pretty=format:"%s|%h|%H" |
-              awk -F '|' '$1 ~ /^android/ {
-                printf "- %s ([%s](https://github.com/kavishdevar/librepods/commit/%s))\n", $1, $2, $3
-              }')
-          fi
-
-          {
-            echo "notes<<EOF"
-            echo "$NOTES"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Create or Update release
-        id: release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.release_check.outputs.tag }}
-          TITLE: ${{ steps.release_check.outputs.title }}
-          NOTES: ${{ steps.changelog.outputs.notes }}
-          EXISTS: ${{ steps.release_check.outputs.exists }}
-        run: |
-          IS_STABLE=true
-          if [[ "$TAG" =~ -(alpha|beta|rc) ]]; then
-            IS_STABLE=false
-          fi
-
-          PRERELEASE_FLAG=""
-          if [[ "$IS_STABLE" == "false" ]]; then
-            PRERELEASE_FLAG="--prerelease"
-          fi
-
-          if [[ "$EXISTS" == "true" ]]; then
-            if [[ "$IS_STABLE" == "true" ]]; then
-              echo "Stable release $TAG already exists. Overwriting assets and updating notes..."
-              gh release upload "$TAG" artifacts/apk-release/* artifacts/apk-debug/* --clobber
-              gh release edit "$TAG" --title "$TITLE" --notes "$NOTES"
-              echo "posted=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "Prerelease $TAG already exists. Skipping..."
-              echo "posted=false" >> "$GITHUB_OUTPUT"
-            fi
-          else
-            echo "Creating new release $TAG..."
-            gh release create "$TAG" \
-              artifacts/apk-release/* \
-              artifacts/apk-debug/* \
-              --target "$GITHUB_SHA" \
-              --title "$TITLE" \
-              --notes "$NOTES" \
-              $PRERELEASE_FLAG
-            echo "posted=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Download release bundle
-        uses: actions/download-artifact@v8
+          ref: ${{ needs.build.outputs.commit }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
         with:
-          name: release-bundle
-          path: artifacts/release-bundle
-
-      - name: Upload to Google Play (Main branch only)
-        if: github.ref == 'refs/heads/main' && (steps.prev_code.outputs.previous_code != env.VERSION_CODE)
+          name: apk-release
+          path: artifacts
+      - name: Publish signed FOSS prerelease
         env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.build.outputs.release_tag }}
+          RELEASE_COMMIT: ${{ needs.build.outputs.commit }}
           APP_VERSION: ${{ needs.build.outputs.app_version }}
-          VERSION_CODE: ${{ needs.build.outputs.version_code }}
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
-          packageName: me.kavishdevar.librepods
-          releaseFiles: artifacts/release-bundle/*.aab
-          tracks: beta
-          releaseName: "${VERSION_CODE} (v${APP_VERSION})"
-
-      - name: Upload to Google Play (Rewrite Internal Track)
-        id: upload_rewrite
-        if: github.ref == 'refs/heads/android/rewrite'
-        env:
-          APP_VERSION: ${{ needs.build.outputs.app_version }}
-          VERSION_CODE: ${{ needs.build.outputs.version_code }}
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
-          packageName: me.kavishdevar.librepods
-          releaseFiles: artifacts/release-bundle/*.aab
-          tracks: internal
-          releaseName: "rewrite v${APP_VERSION} (${VERSION_CODE})"
-
-      - name: Get timestamp
-        if: steps.release.outputs.posted == 'true'
-        id: timestamp
-        run: echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
-
-      - name: Post to Discord
-        if: steps.release.outputs.posted == 'true'
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_ANDROID_CI_URL }}
-          RELEASE_TAG: ${{ steps.release_check.outputs.tag }}
-          RELEASE_TITLE: ${{ steps.release_check.outputs.title }}
-          RELEASE_DESCRIPTION: ${{ steps.release_check.outputs.description }}
-          APP_VERSION: ${{ needs.build.outputs.app_version }}
-          TIMESTAMP: ${{ steps.timestamp.outputs.timestamp }}
-          CHANGELOG_NOTES: ${{ steps.changelog.outputs.notes }}
-          PLAY_URL: ${{ steps.upload_rewrite.outputs.INTERNAL_SHARING_DOWNLOAD_URL }}
         run: |
-          jq -n \
-            --arg title "$RELEASE_TITLE" \
-            --arg description "$RELEASE_DESCRIPTION" \
-            --arg timestamp "$TIMESTAMP" \
-            --arg changelog "$CHANGELOG_NOTES" \
-            --arg release_url "https://github.com/kavishdevar/librepods/releases/download/${RELEASE_TAG}/LibrePods-FOSS-v${APP_VERSION}-${{ needs.build.outputs.version_code }}-release.apk" \
-            --arg debug_url "https://github.com/kavishdevar/librepods/releases/download/${RELEASE_TAG}/LibrePods-FOSS-v${APP_VERSION}-${{ needs.build.outputs.version_code }}-debug.apk" \
-            --arg play_url "${PLAY_URL:-}" \
-            '{
-              embeds: [
-                {
-                  title: $title,
-                  description: $description,
-                  color: 253060,
-                  timestamp: $timestamp,
-                  fields: [
-                    {
-                      name: "Changelog",
-                      value: (if $changelog == "" then "No changes." elif ($changelog | length) > 1024 then (($changelog | .[0:1021]) + "...") else $changelog end),
-                      inline: false
-                    }
-                  ],
-                  footer: {
-                    text: "GitHub Actions"
-                  }
-                }
-              ],
-              components: [
-                {
-                  type: 1,
-                  components: (
-                    [
-                      {
-                        type: 2,
-                        label: "Download Release APK",
-                        style: 5,
-                        url: $release_url
-                      },
-                      {
-                        type: 2,
-                        label: "Download Debug APK",
-                        style: 5,
-                        url: $debug_url
-                      }
-                    ] +
-                    if $play_url != "" then [
-                      {
-                        type: 2,
-                        label: "Google Play Internal",
-                        style: 5,
-                        url: $play_url
-                      }
-                    ] else [] end
-                  )
-                }
-              ]
-            }' |
-          curl --fail-with-body -X POST \
-            "${DISCORD_WEBHOOK}?with_components=true" \
-            -H "Content-Type: application/json" \
-            --data-binary @-
+          if git show-ref --verify --quiet "refs/tags/$RELEASE_TAG"; then
+            tagged_commit=$(git rev-list -n 1 "refs/tags/$RELEASE_TAG")
+            if [ "$tagged_commit" != "$RELEASE_COMMIT" ]; then
+              echo 'Refusing to publish: the release tag points to a different commit' >&2
+              exit 1
+            fi
+          fi
+          (cd artifacts && sha256sum --check SHA256SUMS)
+          gh release create "$RELEASE_TAG" artifacts/* \
+            --target "$RELEASE_COMMIT" \
+            --title "LibrePods Pixel $APP_VERSION" \
+            --generate-notes --prerelease

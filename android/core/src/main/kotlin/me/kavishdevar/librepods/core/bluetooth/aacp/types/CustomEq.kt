@@ -23,6 +23,7 @@ data class CustomEq(
     }
 
     init {
+        require(state in 1..2) { "state must be disabled (1) or enabled (2)" }
         require(low in 0..100) { "low must be between 0 and 100, was $low" }
         require(mid in 0..100) { "mid must be between 0 and 100, was $mid" }
         require(high in 0..100) { "high must be between 0 and 100, was $high" }

@@ -23,6 +23,7 @@ data class ControlCommand(
 
     companion object {
         fun fromAACPPayload(data: ByteArray): ControlCommand {
+            require(data.size == 5) { "Control command must contain an identifier and four value bytes" }
             val identifier = ControlCommandIdentifier.fromByte(data[0])
                 ?: throw IllegalArgumentException("Unknown ControlCommandIdentifier: ${data[0].toHexString()}")
 
@@ -33,6 +34,7 @@ data class ControlCommand(
     }
 
     fun toAACPPayload(): ByteArray {
+        require(value.isNotEmpty() && value.size <= 4) { "Control command value must contain one to four bytes" }
         val payload = ByteArray(5)
         payload[0] = this.identifier.value
         System.arraycopy(this.value, 0, payload, 1, this.value.size.coerceAtMost(4))

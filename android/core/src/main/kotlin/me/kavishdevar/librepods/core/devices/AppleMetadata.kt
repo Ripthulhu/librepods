@@ -22,6 +22,8 @@ data class AppleMetadata(
     val hardwareRevision: String = "",
     val updaterIdentifier: String = "",
 ): DeviceMetadata {
+    val publicFirmware: String? get() = AirPodsFirmware.publicVersion(version1, version3)
+    val firmwareMajor: Int? get() = publicFirmware?.let(AirPodsFirmware::major)
     override val iconName: String
         get() = AirPodsSpecs.getSpec(model).genericIconName
 }
