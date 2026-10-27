@@ -1,0 +1,17 @@
+<!-- Unselected listening-mode button in the device notification. Neutral alpha tints work on light and dark notification backgrounds. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#1F8A8A8A" />
+            <corners android:radius="14dp" />
+            <padding android:left="4dp" android:top="8dp" android:right="4dp" android:bottom="8dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
+            <corners android:radius="14dp" />
+            <padding android:left="4dp" android:top="8dp" android:right="4dp" android:bottom="8dp" />
+        </shape>
+    </item>
+</selector>

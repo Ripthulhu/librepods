@@ -112,7 +112,8 @@ internal fun NoiseModeCycleSettings(state: AppleState, settings: AppleSettings, 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(stringResource(R.string.noise_cycle_shared_description), style = MaterialTheme.typography.bodyMedium)
         StyledList(title = stringResource(R.string.noise_control), key = chosen to supported) {
-            modes.filter { it.first != 8 || supported and 8 != 0 }.forEach { (bit, label, icon) ->
+            // Hide modes this device can't cycle through right now (Off needs the Off Listening Mode toggle, Adaptive needs firmware support).
+            modes.filter { (it.first != 8 && it.first != 1) || supported and it.first != 0 }.forEach { (bit, label, icon) ->
                 styledListItem(contentText = stringResource(label), selected = chosen and bit != 0,
                     enabled = enabled && supported and bit != 0,
                     onClick = {

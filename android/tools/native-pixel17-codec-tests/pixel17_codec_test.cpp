@@ -171,7 +171,7 @@ void creation_and_layout() {
     check(pixel17_codec_info(object, info.data(), info.size()) && bitrate(info.data(), info.size()) == 256000);
     Pixel17NativeConfig config{};
     check(pixel17_codec_get_config(object, &config) && config.codec_type == 5);
-    int unrelated;
+    int unrelated = 0;
     check(!pixel17_codec_owns(&unrelated) && !pixel17_codec_info(&unrelated, info.data(), info.size()));
     dispose(object);
     check(!pixel17_codec_owns(object) && pixel17_codec_active_objects() == 0 && locks == 0);

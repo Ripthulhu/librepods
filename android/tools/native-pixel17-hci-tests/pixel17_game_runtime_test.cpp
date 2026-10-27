@@ -33,7 +33,7 @@ Pixel17HciOwner expected() {
 }
 }
 namespace eld {
-EncoderClockStatus encoder_clock_status() {
+EncoderClockStatus encoder_clock_status(bool) {
     // Reentrant pure snapshot proves callers never retain RuntimeMutex while
     // entering the real encoder's independent mutex.
     (void)pixel17_game_status();

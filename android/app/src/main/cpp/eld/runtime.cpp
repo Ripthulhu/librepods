@@ -31,14 +31,15 @@ namespace {
 constexpr size_t kMaximumHooks=21;
 struct Segment { uint64_t va, offset, file_size, memory_size; uint32_t flags; };
 std::mutex guard;
-RuntimeHook install_hook=nullptr;
-RuntimeUnhook remove_hook=nullptr;
+// Only read on Android; host test builds set them without reading.
+[[maybe_unused]] RuntimeHook install_hook=nullptr;
+[[maybe_unused]] RuntimeUnhook remove_hook=nullptr;
 bool initialized=false, preference_known=false, opted_in=false, java_ack=false;
 bool complete=false, attempted=false, late=false, veto=false;
 bool lifetime_pinned=false;
 bool pixel_mode=false;
 std::atomic<bool> identity{false}, encoder_failed{false};
-void* held_library=nullptr;
+[[maybe_unused]] void* held_library=nullptr;
 #if defined(__ANDROID__)
 jobject host_loader_global=nullptr, module_bridge_global=nullptr;
 #endif

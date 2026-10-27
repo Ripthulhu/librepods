@@ -112,7 +112,7 @@ class NoiseModeCycleRenderingTest {
                 }
             }
         }
-        compose.onNodeWithText("Off").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText("Off").assertDoesNotExist()
         compose.onNodeWithText("Turn on Off Listening Mode in AirPods settings.").performScrollTo().assertIsDisplayed()
         compose.runOnIdle { allowOff.value = true }
         choose("Off")

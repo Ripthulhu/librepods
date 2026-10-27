@@ -1,0 +1,162 @@
+<!-- Expanded device notification: battery line plus evenly spaced, centered listening-mode buttons.
+     RemoteViews uses framework ImageView tinting, not AppCompat attributes. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    tools:ignore="UseAppTint,ContentDescription">
+
+    <TextView
+        android:id="@+id/notification_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@color/notification_text" />
+
+    <TextView
+        android:id="@+id/notification_battery"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textSize="13sp"
+        android:textColor="@color/notification_text_secondary" />
+
+    <LinearLayout
+        android:id="@+id/notification_noise_control_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:baselineAligned="false"
+        android:gravity="center"
+        android:paddingTop="10dp">
+
+        <LinearLayout
+            android:id="@+id/notification_off_button"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/shape_notification_mode_button"
+            android:contentDescription="@string/off"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_noise_cancellation"
+                android:tint="@color/notification_text" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="4dp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:text="@string/off"
+                android:textColor="@color/notification_text"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/notification_transparency_button"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/shape_notification_mode_button"
+            android:contentDescription="@string/transparency"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_transparency"
+                android:tint="@color/notification_text" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="4dp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:text="@string/transparency"
+                android:textColor="@color/notification_text"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/notification_adaptive_button"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/shape_notification_mode_button"
+            android:contentDescription="@string/adaptive"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_adaptive"
+                android:tint="@color/notification_text" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="4dp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:text="@string/adaptive"
+                android:textColor="@color/notification_text"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/notification_anc_button"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/shape_notification_mode_button"
+            android:contentDescription="@string/noise_cancellation"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_noise_cancellation"
+                android:tint="@color/notification_text" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="4dp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:text="@string/noise_cancellation"
+                android:textColor="@color/notification_text"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

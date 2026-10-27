@@ -130,6 +130,9 @@ class NearbyDeviceConnectionTest {
         `when`(device.bluetoothDevice).thenReturn(bluetooth)
         `when`(device.state).thenReturn(MutableStateFlow(AppleState()))
         `when`(device.metadata).thenReturn(MutableStateFlow(AppleMetadata(name = "AirPods")))
+        `when`(device.settings).thenReturn(MutableStateFlow(AppleSettings()))
+        // Takeover diagnostics are debug-only by default; these tests assert on them.
+        ShadowLog.setLoggable("NearbyTakeover", android.util.Log.DEBUG)
         // AACP can be connected while the media profile still belongs to another host.
         `when`(device.connectionState).thenReturn(connectionState)
         `when`(device.aacp).thenReturn(aacp)
