@@ -1,28 +1,78 @@
 package me.kavishdevar.librepods.dongle
 
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.ADAPTIVE_VOLUME_CONFIG
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.ALLOW_AUTO_CONNECT
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.ALLOW_OFF_OPTION
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.AUTO_ANC_STRENGTH
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.CALL_MANAGEMENT_CONFIG
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.CHIME_VOLUME
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.CLICK_HOLD_INTERVAL
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.CLICK_HOLD_MODE
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.CONVERSATION_DETECT_CONFIG
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.CROWN_ROTATION_DIRECTION
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.DOUBLE_CLICK_INTERVAL
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.DYNAMIC_END_OF_CHARGE
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.EAR_DETECTION_CONFIG
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.IN_CASE_TONE_CONFIG
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.IN_CASE_TONE_VOLUME
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.LISTENING_MODE
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.LISTENING_MODE_CONFIGS
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.MIC_MODE
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.ONE_BUD_ANC_MODE
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.SLEEP_DETECTION_CONFIG
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.SMART_ROUTING_MODE
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.VOLUME_SWIPE_INTERVAL
+import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier.VOLUME_SWIPE_MODE
 import me.kavishdevar.librepods.core.devices.AirPodsModel
 import me.kavishdevar.librepods.core.devices.AirPodsSpecs
 import me.kavishdevar.librepods.core.devices.BaseCapability
 import me.kavishdevar.librepods.core.devices.noiseCycleRequiresAllowOff
 import me.kavishdevar.librepods.core.devices.supportedNoiseModeCycleMask
+import me.kavishdevar.librepods.dongle.DongleControlProtocol.Control.Capability
+import me.kavishdevar.librepods.dongle.DongleControlProtocol.SettingValue
 
 internal data class DongleAudioIntent(val codec: Int, val rateMode: Int, val bitrate: Long)
 
+/** The dongle reports and writes AACP control ids as unsigned setting numbers. */
+internal val ControlCommandIdentifier.settingId: Int get() = value.toInt() and 255
+
+/** Adaptive listening and adaptive strength need at least this AirPods firmware major version. */
+private const val ADAPTIVE_AUDIO_MINIMUM_FIRMWARE_MAJOR = 6
+private const val SLEEP_DETECTION_MINIMUM_FIRMWARE_MAJOR = 8
+/** Every hold-action pair this client writes: each ear is either the assistant or noise control. */
+private val holdActionPairs = listOf(SettingValue.HOLD_ACTION_DIGITAL_ASSISTANT, SettingValue.HOLD_ACTION_NOISE_CONTROL)
+    .flatMap { left -> listOf(SettingValue.HOLD_ACTION_DIGITAL_ASSISTANT, SettingValue.HOLD_ACTION_NOISE_CONTROL)
+        .map { right -> (left shl SettingValue.LEFT_HOLD_ACTION_SHIFT) or (right shl SettingValue.RIGHT_HOLD_ACTION_SHIFT) } }
+    .toSet()
+
 internal fun validLiveSetting(id: Int, value: Long): Boolean = when (id) {
-    0x01, 0x17, 0x18, 0x23 -> value in 0L..2L
-    0x0d -> value in 1L..4L
-    0x0a, 0x1b, 0x1c, 0x20, 0x25, 0x26, 0x28, 0x31, 0x34, 0x35, 0x36, 0x3b -> value in 1L..2L
-    0x16 -> value in setOf(0x0101L, 0x0105L, 0x0501L, 0x0505L)
-    0x1a -> value in 0L..15L && java.lang.Long.bitCount(value) >= 2
-    0x24 -> value in setOf(0x0200L, 0x0300L)
-    0x1f -> value in 0x5000L..0x5064L
-    0x2e, 0x40 -> value in 0L..100L
+    MIC_MODE.settingId, DOUBLE_CLICK_INTERVAL.settingId, CLICK_HOLD_INTERVAL.settingId, VOLUME_SWIPE_INTERVAL.settingId ->
+        value in 0L..SettingValue.THREE_WAY_CHOICE_MAXIMUM
+    LISTENING_MODE.settingId -> value in SettingValue.LISTENING_MODE_OFF..SettingValue.LISTENING_MODE_ADAPTIVE
+    EAR_DETECTION_CONFIG.settingId, ONE_BUD_ANC_MODE.settingId, CROWN_ROTATION_DIRECTION.settingId,
+    SMART_ROUTING_MODE.settingId, VOLUME_SWIPE_MODE.settingId, ADAPTIVE_VOLUME_CONFIG.settingId,
+    CONVERSATION_DETECT_CONFIG.settingId, IN_CASE_TONE_CONFIG.settingId, ALLOW_OFF_OPTION.settingId,
+    SLEEP_DETECTION_CONFIG.settingId, ALLOW_AUTO_CONNECT.settingId, DYNAMIC_END_OF_CHARGE.settingId ->
+        value in SettingValue.TOGGLE_ON..SettingValue.TOGGLE_OFF
+    CLICK_HOLD_MODE.settingId -> value in holdActionPairs
+    LISTENING_MODE_CONFIGS.settingId -> value in 0L..SettingValue.HOLD_MODES_ALL &&
+        java.lang.Long.bitCount(value) >= SettingValue.HOLD_MODES_MINIMUM_SELECTED
+    CALL_MANAGEMENT_CONFIG.settingId -> value in setOf(SettingValue.CALL_CONTROLS_SWAPPED, SettingValue.CALL_CONTROLS_DEFAULT)
+    CHIME_VOLUME.settingId -> value in SettingValue.TONE_VOLUME_FLAG..(SettingValue.TONE_VOLUME_FLAG + SettingValue.MAXIMUM_PERCENT)
+    AUTO_ANC_STRENGTH.settingId, IN_CASE_TONE_VOLUME.settingId -> value in 0L..SettingValue.MAXIMUM_PERCENT
     else -> false
 }
 
-internal val dongleSavedChoiceIds = setOf(0x01, 0x0a, 0x16, 0x1a, 0x23, 0x31, 0x34, 0x40)
-private val settingIds = listOf(0x01, 0x0a, 0x0d, 0x16, 0x17, 0x18, 0x1a, 0x1b, 0x1c, 0x1f,
-    0x20, 0x23, 0x24, 0x25, 0x26, 0x28, 0x2e, 0x31, 0x34, 0x35, 0x36, 0x3b, 0x40)
+/** Settings this client may write and remember before the AirPods have reported them. */
+internal val dongleSavedChoiceIds = listOf(MIC_MODE, EAR_DETECTION_CONFIG, CLICK_HOLD_MODE, LISTENING_MODE_CONFIGS,
+    VOLUME_SWIPE_INTERVAL, IN_CASE_TONE_CONFIG, ALLOW_OFF_OPTION, IN_CASE_TONE_VOLUME).map { it.settingId }.toSet()
+/** The firmware's legacy 23-control catalog, in catalog index order; [controlMask] bits refer to these indices. */
+private val settingIds = listOf(MIC_MODE, EAR_DETECTION_CONFIG, LISTENING_MODE, CLICK_HOLD_MODE, DOUBLE_CLICK_INTERVAL,
+    CLICK_HOLD_INTERVAL, LISTENING_MODE_CONFIGS, ONE_BUD_ANC_MODE, CROWN_ROTATION_DIRECTION, CHIME_VOLUME,
+    SMART_ROUTING_MODE, VOLUME_SWIPE_INTERVAL, CALL_MANAGEMENT_CONFIG, VOLUME_SWIPE_MODE, ADAPTIVE_VOLUME_CONFIG,
+    CONVERSATION_DETECT_CONFIG, AUTO_ANC_STRENGTH, IN_CASE_TONE_CONFIG, ALLOW_OFF_OPTION, SLEEP_DETECTION_CONFIG,
+    ALLOW_AUTO_CONNECT, DYNAMIC_END_OF_CHARGE, IN_CASE_TONE_VOLUME).map { it.settingId }
 
 /** The firmware's reviewed control catalog; the core model still owns semantic capabilities. */
 private fun controlMask(model: AirPodsModel): Int = when (model) {
@@ -40,37 +90,53 @@ private fun controlMask(model: AirPodsModel): Int = when (model) {
     AirPodsModel.UNKNOWN -> 0
 }
 
-internal fun currentDongleSetting(id: Int, raw: Long): Long = if (id == 0x16) raw and 0xffff else raw
+internal fun currentDongleSetting(id: Int, raw: Long): Long =
+    if (id == CLICK_HOLD_MODE.settingId) raw and SettingValue.HOLD_ACTIONS_REPORT_MASK else raw
 
 internal fun DongleState.canEditSetting(id: Int): Boolean {
     val info = metadata ?: return false
     val index = settingIds.indexOf(id)
-    if (!connected || status?.controlsReady != true || status.microphoneActive || status.capabilities and 0x18 != 0x18 ||
+    val settingsCapabilities = Capability.SETTINGS_TRANSPORT or Capability.TYPED_FEATURES
+    if (!connected || status?.controlsReady != true || status.microphoneActive ||
+        status.capabilities and settingsCapabilities != settingsCapabilities ||
         index < 0 || info.model == AirPodsModel.UNKNOWN || info.model != AirPodsModel.fromModelNumber(info.modelNumber) ||
         controlMask(info.model) and (1 shl index) == 0) return false
     val caps = AirPodsSpecs.getSpec(info.model).baseCapabilities
-    if ((id == 0x2e && (BaseCapability.ADAPTIVE_AUDIO !in caps || (info.firmwareMajor ?: 0) < 6 || settings[0x0d]?.value != 4L)) ||
-        (id == 0x35 && (BaseCapability.SLEEP_DETECTION !in caps || (info.firmwareMajor ?: 0) < 8))) return false
+    val firmwareMajor = info.firmwareMajor ?: 0
+    val adaptiveStrengthUnavailable = id == AUTO_ANC_STRENGTH.settingId && (BaseCapability.ADAPTIVE_AUDIO !in caps ||
+        firmwareMajor < ADAPTIVE_AUDIO_MINIMUM_FIRMWARE_MAJOR ||
+        settings[LISTENING_MODE.settingId]?.value != SettingValue.LISTENING_MODE_ADAPTIVE)
+    val sleepDetectionUnavailable = id == SLEEP_DETECTION_CONFIG.settingId &&
+        (BaseCapability.SLEEP_DETECTION !in caps || firmwareMajor < SLEEP_DETECTION_MINIMUM_FIRMWARE_MAJOR)
+    if (adaptiveStrengthUnavailable || sleepDetectionUnavailable) return false
     val actual = settings[id]?.value
     if (actual != null) return validLiveSetting(id, currentDongleSetting(id, actual))
-    return id in dongleSavedChoiceIds && (id != 0x34 || info.model == AirPodsModel.AIRPODS_PRO_3)
+    return id in dongleSavedChoiceIds && (id != ALLOW_OFF_OPTION.settingId || info.model == AirPodsModel.AIRPODS_PRO_3)
 }
 
 internal fun DongleState.canWriteSetting(id: Int, value: Long): Boolean {
     if (!canEditSetting(id) || !validLiveSetting(id, value)) return false
     val info = checkNotNull(metadata)
     val caps = AirPodsSpecs.getSpec(info.model).baseCapabilities
-    val adaptive = BaseCapability.ADAPTIVE_AUDIO in caps && (info.firmwareMajor ?: 0) >= 6
-    val offValue = requested[0x34] ?: settings[0x34]?.value ?: savedChoices[0x34]
+    val adaptive = BaseCapability.ADAPTIVE_AUDIO in caps && (info.firmwareMajor ?: 0) >= ADAPTIVE_AUDIO_MINIMUM_FIRMWARE_MAJOR
+    val allowOffId = ALLOW_OFF_OPTION.settingId
+    val offValue = requested[allowOffId] ?: settings[allowOffId]?.value ?: savedChoices[allowOffId]
+    val listeningMode = settings[LISTENING_MODE.settingId]?.value
     val allowOff = when (offValue) {
-        1L -> true
-        2L -> false
-        else -> if (!info.noiseCycleRequiresAllowOff() || settings[0x0d]?.value == 1L) true else null
+        SettingValue.TOGGLE_ON -> true
+        SettingValue.TOGGLE_OFF -> false
+        else -> if (!info.noiseCycleRequiresAllowOff() || listeningMode == SettingValue.LISTENING_MODE_OFF) true else null
     }
     return when (id) {
-        0x0d -> (value != 4L || adaptive) && (value != 1L || allowOff == true)
-        0x16 -> BaseCapability.LISTENING_MODE in caps || value and 0xff != 5L && value shr 8 and 0xff != 5L
-        0x1a -> value.toInt() and info.supportedNoiseModeCycleMask(allowOff).inv() == 0
+        LISTENING_MODE.settingId -> (value != SettingValue.LISTENING_MODE_ADAPTIVE || adaptive) &&
+            (value != SettingValue.LISTENING_MODE_OFF || allowOff == true)
+        CLICK_HOLD_MODE.settingId -> {
+            val rightAction = value shr SettingValue.RIGHT_HOLD_ACTION_SHIFT and SettingValue.HOLD_ACTION_MASK
+            val leftAction = value shr SettingValue.LEFT_HOLD_ACTION_SHIFT and SettingValue.HOLD_ACTION_MASK
+            BaseCapability.LISTENING_MODE in caps ||
+                rightAction != SettingValue.HOLD_ACTION_NOISE_CONTROL && leftAction != SettingValue.HOLD_ACTION_NOISE_CONTROL
+        }
+        LISTENING_MODE_CONFIGS.settingId -> value.toInt() and info.supportedNoiseModeCycleMask(allowOff).inv() == 0
         else -> true
     }
 }

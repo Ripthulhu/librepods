@@ -146,60 +146,85 @@ class NativeHeadTrackingController internal constructor(
     }
     // Bluetooth source cleanup can block in a socket write; it must not delay the user's native Off.
     private val offWriter = scope.launch {
-        for (choice in offRequests) {
-            try {
-                if (pending.get() !== choice || !current()) continue
-                access.connect()
-                while (!access.hasRootPrivileges && current() && pending.get() === choice &&
-                    SystemClock.elapsedRealtime() - choice.started < 5_000) delay(100)
-                val owns = {
-                    current() && pending.get() === choice && choiceEpoch.get() == choice.epoch
-                }
-                val atmosApplied = applyAtmosChoice(choice, owns)
-                if (choice.enabled && !choice.spatial) {
-                    if (!atmosApplied) withChoice(choice.epoch) {
-                        if (pending.compareAndSet(choice, null)) mutableState.update {
-                            it.copy(enabled = displayedTracking(), busy = false, reason = "request_failed")
-                        }
-                    }
-                    continue // The existing native runner owns preparation and the head-tracker lease.
-                }
-                val result = if (choice.spatial) {
-                    if (!choice.enabled) access.disableHeadTracking(device.macAddress.value, owns)
-                    access.setFixedSpatialEnabled(device.macAddress.value, choice.enabled, owns)
-                } else access.disableHeadTracking(device.macAddress.value, owns)
-                withChoice(choice.epoch) {
-                    if (pending.compareAndSet(choice, null)) {
-                        val nativeApplied = if (choice.spatial) result.getBoolean("applied") && result.spatialEnabled() == choice.enabled &&
-                            result.flag("head_tracker_enabled") != null && (choice.enabled || result.flag("head_tracker_enabled") == false)
-                            else result.getBoolean("applied")
-                        if (nativeApplied) acceptedNativeEpoch.set(choice.epoch)
-                        val applied = atmosApplied && nativeApplied
-                        nativeOn = if (choice.spatial) result.flag("head_tracker_enabled") else if (applied) false else null
-                        if (choice.spatial) publishSpatial(result)
-                        if (nativeOn == false) { failedSocket = null; failedKey = null; poseFaultReason = null }
-                        mutableState.update { it.copy(enabled = displayedTracking(), busy = false, spatialBusy = false, active = false,
-                            reason = if (applied) { if (choice.enabled) "ok" else "off" } else "request_failed") }
-                    }
-                }
-            } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) {
-                withChoice(choice.epoch) {
-                    if (pending.compareAndSet(choice, null)) mutableState.update {
-                        it.copy(enabled = nativeOn, busy = false, spatialEnabled = nativeSpatialOn,
-                            spatialBusy = false, reason = "request_failed")
-                    }
-                }
-            } finally { forceInspect.set(true) }
+        for (choice in offRequests) writeRequestedChoice(choice)
+    }
+
+    private suspend fun writeRequestedChoice(choice: Choice) {
+        try {
+            if (pending.get() !== choice || !current()) return
+            access.connect()
+            while (!access.hasRootPrivileges && choiceStillPendingWithinTimeout(choice)) delay(POLL_INTERVAL_MILLISECONDS)
+            val owns = {
+                current() && pending.get() === choice && choiceEpoch.get() == choice.epoch
+            }
+            val atmosApplied = applyAtmosChoice(choice, owns)
+            if (choice.enabled && !choice.spatial) {
+                if (!atmosApplied) failTrackingRequest(choice)
+                return // The existing native runner owns preparation and the head-tracker lease.
+            }
+            val result = writeNativeChoice(choice, owns)
+            withChoice(choice.epoch) {
+                if (pending.compareAndSet(choice, null)) publishNativeChoiceResult(choice, result, atmosApplied)
+            }
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) {
+            failChoice(choice)
+        } finally { forceInspect.set(true) }
+    }
+
+    /** Spatial choices set fixed spatial audio (turning head tracking off first when disabling); others turn tracking off. */
+    private suspend fun writeNativeChoice(choice: Choice, owns: () -> Boolean): Bundle {
+        if (!choice.spatial) return access.disableHeadTracking(device.macAddress.value, owns)
+        if (!choice.enabled) access.disableHeadTracking(device.macAddress.value, owns)
+        return access.setFixedSpatialEnabled(device.macAddress.value, choice.enabled, owns)
+    }
+
+    private fun failTrackingRequest(choice: Choice) = withChoice(choice.epoch) {
+        if (pending.compareAndSet(choice, null)) mutableState.update {
+            it.copy(enabled = displayedTracking(), busy = false, reason = "request_failed")
         }
     }
 
+    private fun failChoice(choice: Choice) = withChoice(choice.epoch) {
+        if (pending.compareAndSet(choice, null)) mutableState.update {
+            it.copy(enabled = nativeOn, busy = false, spatialEnabled = nativeSpatialOn,
+                spatialBusy = false, reason = "request_failed")
+        }
+    }
+
+    private fun choiceStillPendingWithinTimeout(choice: Choice) = current() && pending.get() === choice &&
+        SystemClock.elapsedRealtime() - choice.started < PENDING_CHOICE_TIMEOUT_MILLISECONDS
+
+    /** Runs under [choiceLock] after this writer retired [choice] from [pending]. */
+    private fun publishNativeChoiceResult(choice: Choice, result: Bundle, atmosApplied: Boolean) {
+        val nativeApplied = nativeChoiceApplied(choice, result)
+        if (nativeApplied) acceptedNativeEpoch.set(choice.epoch)
+        val applied = atmosApplied && nativeApplied
+        nativeOn = if (choice.spatial) result.flag("head_tracker_enabled") else if (applied) false else null
+        if (choice.spatial) publishSpatial(result)
+        if (nativeOn == false) clearPoseFault()
+        mutableState.update { it.copy(enabled = displayedTracking(), busy = false, spatialBusy = false, active = false,
+            reason = if (applied) { if (choice.enabled) "ok" else "off" } else "request_failed") }
+    }
+
+    private fun nativeChoiceApplied(choice: Choice, result: Bundle): Boolean {
+        if (!choice.spatial) return result.getBoolean("applied")
+        if (!result.getBoolean("applied") || result.spatialEnabled() != choice.enabled) return false
+        val headTrackerEnabled = result.flag("head_tracker_enabled") ?: return false
+        return choice.enabled || !headTrackerEnabled
+    }
+
+    private fun clearPoseFault() { failedSocket = null; failedKey = null; poseFaultReason = null }
+
+    private fun poseFaultRecordedFor(socket: BluetoothSocket?, key: SpatialPoseProfileKey?) =
+        failedSocket === socket && failedKey == key
+
     private fun needsAtmos(backend: Bundle? = atmosControls) =
-        enableAtmos && !(backend?.getInt("version") == 1 &&
+        enableAtmos && !(backend?.getInt("version") == SUPPORTED_SNAPSHOT_VERSION &&
             backend.getString("reason") == SpatialBackendSnapshot.ABSENT)
 
     private fun atmosPolicyCurrent(): Boolean = !needsAtmos() || atmosControls?.let {
-        it.getInt("version", 0) == 1 && it.flag("supported") == true && it.flag("known") == true &&
+        it.getInt("version", 0) == SUPPORTED_SNAPSHOT_VERSION && it.flag("supported") == true && it.flag("known") == true &&
             (desiredSpatial == null || it.getLong("accepted_generation", -1) == choiceEpoch.get() &&
                 it.flag("desired_spatial") == desiredSpatial && it.flag("desired_tracking") == desiredTracking)
     } == true
@@ -249,7 +274,7 @@ class NativeHeadTrackingController internal constructor(
     fun setCalibrationActive(owner: Any, active: Boolean) {
         synchronized(calibrationOwners) { if (active) calibrationOwners += owner else calibrationOwners -= owner }
         if (active) sessionLive?.set(false)
-        else { failedSocket = null; failedKey = null; poseFaultReason = null }
+        else clearPoseFault()
     }
 
     fun setEnabled(enabled: Boolean) {
@@ -268,9 +293,7 @@ class NativeHeadTrackingController internal constructor(
 
     fun setSpatialEnabled(enabled: Boolean) {
         synchronized(choiceLock) {
-            val currentState = mutableState.value
-            if (!current() || !currentState.spatialSupported ||
-                enabled && (!currentState.spatialAvailable || currentState.spatialEnabled == null) || currentState.spatialEnabled == enabled) return
+            if (spatialChoiceRejected(mutableState.value, enabled)) return
             val choice = Choice(choiceEpoch.incrementAndGet(), enabled, SystemClock.elapsedRealtime(), spatial = true)
             saveChoice(enabled, false, choice.epoch)
             pending.set(choice)
@@ -281,41 +304,55 @@ class NativeHeadTrackingController internal constructor(
         }
     }
 
+    private fun spatialChoiceRejected(currentState: NativeHeadTrackingState, enabled: Boolean): Boolean {
+        if (!current() || !currentState.spatialSupported) return true
+        val enablingUnavailable = enabled && (!currentState.spatialAvailable || currentState.spatialEnabled == null)
+        return enablingUnavailable || currentState.spatialEnabled == enabled
+    }
+
     private fun headTrackingRequested(): Boolean = if (desiredSpatial == false || desiredTracking == false) false else pending.get()?.let {
         if (it.spatial) it.enabled && nativeOn == true else it.enabled
     } ?: (desiredTracking ?: (nativeOn == true))
 
     private fun publishSpatial(snapshot: Bundle) {
         val backend = atmosControls
-        val optionalReady = !needsAtmos(backend) || backend?.let { it.getInt("version") == 1 &&
-            it.flag("supported") == true && it.flag("available") == true && it.flag("route_verified") == true } == true
-        val writable = optionalReady && snapshot.getInt("version", 0) == 1 && snapshot.flag("known") == true &&
-            snapshot.flag("fixed_supported") == true && snapshot.flag("route_selected") == true
+        val optionalReady = !needsAtmos(backend) || backend?.let(::atmosRouteReady) == true
+        val writable = optionalReady && fixedSpatialWritable(snapshot)
         nativeSpatialOn = snapshot.spatialEnabled()
         mutableState.update {
             val supported = it.spatialSupported || writable
-            val actual = backend?.let { value -> value.flag("actual_audio") == true && value.flag("output_committed") == true &&
-                value.getLong("applied_generation", 0) > 0 && value.getLong("applied_generation") == value.getLong("accepted_generation", -1) &&
-                (desiredSpatial == null || value.getLong("accepted_generation") == choiceEpoch.get()) } == true
+            val actual = backend?.let { value -> backendRendersActualAudio(value) } == true
             it.copy(spatialSupported = supported, spatialEnabled = displayedSpatial().takeIf { supported },
                 spatialAvailable = writable && nativeSpatialOn != null,
-                actualAudio = actual, renderedSpatial = if (actual) backend?.flag("actual_spatial") else null,
-                renderedTracking = if (actual) backend?.flag("actual_tracking") else null,
+                actualAudio = actual, renderedSpatial = if (actual) backend.flag("actual_spatial") else null,
+                renderedTracking = if (actual) backend.flag("actual_tracking") else null,
                 appliedGeneration = backend?.getLong("applied_generation", 0) ?: 0,
                 desiredSpatialEnabled = desiredSpatial, desiredTrackingEnabled = desiredTracking)
         }
     }
 
+    private fun atmosRouteReady(backend: Bundle): Boolean = backend.getInt("version") == SUPPORTED_SNAPSHOT_VERSION &&
+        backend.flag("supported") == true && backend.flag("available") == true && backend.flag("route_verified") == true
+
+    private fun fixedSpatialWritable(snapshot: Bundle): Boolean = snapshot.knownSnapshot() &&
+        snapshot.flag("fixed_supported") == true && snapshot.flag("route_selected") == true
+
+    /** The backend reports committed output whose applied generation is the accepted, current choice. */
+    private fun backendRendersActualAudio(backend: Bundle): Boolean {
+        if (backend.flag("actual_audio") != true || backend.flag("output_committed") != true) return false
+        if (backend.getLong("applied_generation", 0) <= 0) return false
+        if (backend.getLong("applied_generation") != backend.getLong("accepted_generation", -1)) return false
+        return desiredSpatial == null || backend.getLong("accepted_generation") == choiceEpoch.get()
+    }
+
     private suspend fun migrateNativeChoice(snapshot: Bundle, eligible: Boolean): Boolean {
         val backend = atmosControls ?: return false
-        if (!enableAtmos || !eligible || backend.getInt("version") != 1 || backend.flag("supported") != true ||
-            backend.flag("available") != true || backend.flag("route_verified") != true ||
-            snapshot.flag("route_selected") != true || snapshot.flag("fixed_supported") != true)
-            return false
+        if (!enableAtmos || !eligible) return false
+        if (!atmosRouteReady(backend) || !fixedSpatialRouteSelected(snapshot)) return false
         val spatial = snapshot.spatialEnabled() ?: return false
         val head = snapshot.flag("head_tracker_enabled") ?: return false
         val choice = synchronized(choiceLock) {
-            if (desiredSpatial != null || desiredTracking != null || pending.get() != null || !current()) return false
+            if (hasSavedOrPendingChoice() || !current()) return false
             val epoch = choiceEpoch.incrementAndGet()
             saveChoice(spatial, spatial && head, epoch)
             acceptedNativeEpoch.set(epoch) // The migration carries an observed preference; it never writes Android.
@@ -326,18 +363,23 @@ class NativeHeadTrackingController internal constructor(
         return true
     }
 
+    private fun fixedSpatialRouteSelected(snapshot: Bundle): Boolean =
+        snapshot.flag("route_selected") == true && snapshot.flag("fixed_supported") == true
+
+    private fun hasSavedOrPendingChoice() = desiredSpatial != null || desiredTracking != null || pending.get() != null
+
     private fun current() = !closed.get() && runCatching(deviceCurrent).getOrDefault(false) &&
         device.connectionState.value == ConnectionState.CONNECTED
 
     private var savedRearmed = false
     private var lastRearmMs = -1L
     private fun rearmSavedChoice(eligible: Boolean) = synchronized(choiceLock) {
-        if (!current() || !access.hasRootPrivileges || !mutableState.value.spatialAvailable || !hostIdle.get()) return@synchronized
+        if (!readyToRearm()) return@synchronized
         if (desiredSpatial == null || desiredTracking == null || pending.get() != null) return@synchronized
         if (desiredTracking == true && !eligible) return@synchronized
         if (savedRearmed && atmosPolicyCurrent()) return@synchronized
         val now = SystemClock.elapsedRealtime()
-        if (lastRearmMs >= 0 && now - lastRearmMs < 1000) return@synchronized
+        if (rearmedRecently(now)) return@synchronized
         lastRearmMs = now
         savedRearmed = true
         val tracking = desiredTracking == true
@@ -349,6 +391,10 @@ class NativeHeadTrackingController internal constructor(
         offRequests.trySend(choice)
     }
 
+    private fun readyToRearm() = current() && access.hasRootPrivileges && mutableState.value.spatialAvailable && hostIdle.get()
+
+    private fun rearmedRecently(now: Long) = lastRearmMs >= 0 && now - lastRearmMs < REARM_MINIMUM_INTERVAL_MILLISECONDS
+
     private fun reconcileAtmosChoice(eligible: Boolean) = synchronized(choiceLock) {
         val backend = atmosControls ?: return@synchronized
         val spatial = desiredSpatial ?: return@synchronized
@@ -356,7 +402,8 @@ class NativeHeadTrackingController internal constructor(
         val epoch = choiceEpoch.get()
         if (!current() || !acceptedAtmosSpatial(backend, spatial, tracking, epoch)) return@synchronized
         acceptedAtmosEpoch.set(epoch)
-        if (acceptedNativeEpoch.get() == epoch || pending.get() != null || !savedRearmed || tracking && !eligible) return@synchronized
+        if (acceptedNativeEpoch.get() == epoch || pending.get() != null) return@synchronized
+        if (!savedRearmed || tracking && !eligible) return@synchronized
         val choice = Choice(epoch, if (tracking) true else spatial, SystemClock.elapsedRealtime(), spatial = !tracking)
         pending.set(choice)
         mutableState.update { it.copy(enabled = tracking, busy = tracking, spatialBusy = !tracking) }
@@ -375,14 +422,14 @@ class NativeHeadTrackingController internal constructor(
         val socket = device.aacp.captureAudioSocket() ?: return null
         val choice = choiceEpoch.get()
         val epoch = SystemClock.elapsedRealtimeNanos()
-        val reset = (epoch and 255).toInt()
+        val reset = (epoch and DISCONTINUITY_COUNTER_MASK.toLong()).toInt()
         val allowed = { offersSpatialMotion() && choiceEpoch.get() == choice &&
             currentBasis?.headFromRaw == profile.headFromRaw && sourceCurrent(socket, key) }
         if (!allowed() || !externalMotion.compareAndSet(false, true)) return null
         return try {
-            val basis = java.nio.ByteBuffer.allocate(9 * 8).apply { profile.headFromRaw.flatten().forEach(::putDouble) }.array()
+            val basis = java.nio.ByteBuffer.allocate(HEAD_FROM_RAW_MATRIX_BYTES).apply { profile.headFromRaw.flatten().forEach(::putDouble) }.array()
             val identity = Bundle().apply {
-                putInt("version", 1)
+                putInt("version", EXTERNAL_MOTION_IDENTITY_VERSION)
                 putString("peer", device.macAddress.value)
                 putLong("choice_epoch", choice)
                 putByteArray("full_role", key.rawRole.map(Int::toByte).toByteArray())
@@ -417,7 +464,7 @@ class NativeHeadTrackingController internal constructor(
         val idle = hostIdle.get()
         if (!idle) return sourceRejection("host_blocked", idle = idle)
         val checkedAt = hostCheckedAt.get(); val now = SystemClock.elapsedRealtime()
-        if (checkedAt == Long.MIN_VALUE || now - checkedAt !in 0..500)
+        if (checkedAt == Long.MIN_VALUE || now - checkedAt !in 0..HOST_CHECK_MAXIMUM_AGE_MILLISECONDS)
             return sourceRejection("host_check_stale", checkedAt, now, idle)
         if (isCalibrationActive()) return sourceRejection("calibration_active")
         if (!device.aacp.ownsAudioSocket(socket)) return sourceRejection("socket_changed")
@@ -435,13 +482,32 @@ class NativeHeadTrackingController internal constructor(
         mutableState.update { it.copy(active = false) }
     }
 
+    /** The running session no longer matches the requested choice, source, calibration basis or its own liveness. */
+    private fun sessionStale(eligible: Boolean, socket: BluetoothSocket?, key: SpatialPoseProfileKey?,
+        profile: SpatialPoseProfile?): Boolean {
+        if (!eligible || !headTrackingRequested()) return true
+        if (sessionSocket !== socket || sessionKey != key || sessionBasis?.headFromRaw != profile?.headFromRaw) return true
+        return sessionLive?.get() != true || session?.isActive != true
+    }
+
+    private fun canDriveNativeHeadTracking() = !isCalibrationActive() && current() &&
+        nativeSpatialVersion && device.metadata.value.model == AirPodsModel.AIRPODS_PRO_3
+
+    private fun fixedSpatialPrepared(result: Bundle): Boolean {
+        if (!result.getBoolean("applied") || result.spatialEnabled() != true) return false
+        return fixedSpatialRouteSelected(result) && result.flag("head_tracker_enabled") == false
+    }
+
+    private fun automaticRestartAllowed(socket: BluetoothSocket?, key: SpatialPoseProfileKey?) = nativeOn == true &&
+        SystemClock.elapsedRealtime() >= retryAfter.get() && !poseFaultRecordedFor(socket, key)
+
     private val runner = scope.launch {
         // Audio/telephony Binder queries stay outside root ownership and per-pose callbacks.
         val guard = launch(Dispatchers.IO) {
             while (isActive) {
                 hostIdle.set(runCatching { !hostBlocked() }.getOrDefault(false))
                 hostCheckedAt.set(SystemClock.elapsedRealtime())
-                delay(100)
+                delay(HOST_CHECK_INTERVAL_MILLISECONDS)
             }
         }
         var inspectedAt = Long.MIN_VALUE
@@ -457,31 +523,28 @@ class NativeHeadTrackingController internal constructor(
                     val eligible = nativeSpatialVersion && profile != null && socket != null &&
                         sourceCurrent(socket, checkNotNull(key))
                     mutableState.update { it.copy(calibrated = profile != null) }
-                    if (session != null && (!eligible || !headTrackingRequested() || sessionSocket !== socket || sessionKey != key || sessionBasis?.headFromRaw != profile?.headFromRaw ||
-                            sessionLive?.get() != true || session?.isActive != true)) stopSession()
-                    if (failedSocket !== socket || failedKey != key) { failedSocket = null; failedKey = null; poseFaultReason = null }
+                    if (session != null && sessionStale(eligible, socket, key, profile)) stopSession()
+                    if (!poseFaultRecordedFor(socket, key)) clearPoseFault()
                     val epoch = choiceEpoch.get()
                     val choice = pending.get()
-                    if (choice != null && choice.epoch != epoch) { delay(100); continue }
-                    if (choice != null && SystemClock.elapsedRealtime() - choice.started >= 5_000) {
+                    if (choice != null && choice.epoch != epoch) { delay(POLL_INTERVAL_MILLISECONDS); continue }
+                    if (choice != null && SystemClock.elapsedRealtime() - choice.started >= PENDING_CHOICE_TIMEOUT_MILLISECONDS) {
                         withChoice(epoch) {
                             if (pending.compareAndSet(choice, null)) mutableState.update {
                                 it.copy(enabled = nativeOn, busy = false, spatialEnabled = nativeSpatialOn,
                                     spatialBusy = false, reason = "request_failed")
                             }
                         }
-                        delay(100)
+                        delay(POLL_INTERVAL_MILLISECONDS)
                         continue
                     }
-                    if (choice?.spatial == true) { delay(100); continue }
-                    if (choice?.enabled == true && needsAtmos() && acceptedAtmosEpoch.get() != epoch) { delay(100); continue }
-                    if (choice?.enabled != false && !isCalibrationActive() && current() &&
-                        nativeSpatialVersion &&
-                        device.metadata.value.model == AirPodsModel.AIRPODS_PRO_3) {
+                    if (choice?.spatial == true) { delay(POLL_INTERVAL_MILLISECONDS); continue }
+                    if (choice?.enabled == true && needsAtmos() && acceptedAtmosEpoch.get() != epoch) { delay(POLL_INTERVAL_MILLISECONDS); continue }
+                    if (choice?.enabled != false && canDriveNativeHeadTracking()) {
                         access.connect() // Reconnects existing authorization; it never requests a root grant.
                         if (access.hasRootPrivileges) {
                             val now = SystemClock.elapsedRealtime()
-                            if (forceInspect.getAndSet(false) || inspectedAt == Long.MIN_VALUE || now - inspectedAt >= 1_000) {
+                            if (forceInspect.getAndSet(false) || inspectedAt == Long.MIN_VALUE || now - inspectedAt >= INSPECTION_INTERVAL_MILLISECONDS) {
                                 val snapshot = access.inspectSpatialAudio(device.macAddress.value, ::current)
                                 inspectedSpatial = Bundle(snapshot)
                                 if (enableAtmos) atmosControls = access.inspectAtmosSpatial(device.macAddress.value, ::current)
@@ -490,16 +553,16 @@ class NativeHeadTrackingController internal constructor(
                                         if (activeLease === lease) { sinkTiming = stats; sinkTimingAt = SystemClock.elapsedRealtime() }
                                     }
                                 }
-                                if (choiceEpoch.get() != epoch) { forceInspect.set(true); delay(100); continue }
+                                if (choiceEpoch.get() != epoch) { forceInspect.set(true); delay(POLL_INTERVAL_MILLISECONDS); continue }
                                 inspectedAt = now
                                 spatialEligible = false
                                 spatialReady = false
                                 withChoice(epoch) { publishSpatial(snapshot) }
-                                if (snapshot.getInt("version", 0) == 1 && snapshot.flag("known") == true) {
+                                if (snapshot.knownSnapshot()) {
                                     @Suppress("DEPRECATION")
                                     val headPreference = snapshot.flag("head_tracker_enabled")
                                     withChoice(epoch) {
-                                        if (nativeOn == false && headPreference == true) { failedSocket = null; failedKey = null; poseFaultReason = null }
+                                        if (nativeOn == false && headPreference == true) clearPoseFault()
                                         nativeOn = headPreference
                                         spatialEligible = headPreference != null && snapshot.flag("device_enabled") == true &&
                                             snapshot.flag("enabled") == true && snapshot.flag("route_selected") == true
@@ -515,23 +578,22 @@ class NativeHeadTrackingController internal constructor(
                             inspectedSpatial?.let { snapshot ->
                                 if (migrateNativeChoice(snapshot, eligible)) forceInspect.set(true)
                             }
-                            if (choiceEpoch.get() != epoch) { delay(100); continue }
+                            if (choiceEpoch.get() != epoch) { delay(POLL_INTERVAL_MILLISECONDS); continue }
                             rearmSavedChoice(eligible)
                             reconcileAtmosChoice(eligible)
-                            val poseFault = failedSocket != null && failedSocket === socket && failedKey == key
+                            val poseFault = failedSocket != null && poseFaultRecordedFor(socket, key)
                             mutableState.update { it.copy(available = eligible && spatialReady && !poseFault,
                                 reason = if (poseFault) "motion_changed" else it.reason) }
                             val explicitOn = choice?.enabled == true
-                            if (explicitOn && eligible && spatialReady && !spatialEligible) {
+                            val fixedSpatialNeedsPreparation = spatialReady && !spatialEligible
+                            if (explicitOn && eligible && fixedSpatialNeedsPreparation) {
                                 val ownsPreparation = {
                                     current() && pending.get() === choice && choiceEpoch.get() == epoch &&
                                         sourceCurrent(checkNotNull(socket), checkNotNull(key))
                                 }
                                 val result = access.setFixedSpatialEnabled(device.macAddress.value, true, ownsPreparation)
-                                if (!ownsPreparation()) { forceInspect.set(true); delay(100); continue }
-                                spatialEligible = result.getBoolean("applied") && result.spatialEnabled() == true &&
-                                    result.flag("route_selected") == true && result.flag("fixed_supported") == true &&
-                                    result.flag("head_tracker_enabled") == false
+                                if (!ownsPreparation()) { forceInspect.set(true); delay(POLL_INTERVAL_MILLISECONDS); continue }
+                                spatialEligible = fixedSpatialPrepared(result)
                                 withChoice(epoch) {
                                     publishSpatial(result)
                                     if (spatialEligible) nativeOn = result.flag("head_tracker_enabled")
@@ -539,14 +601,13 @@ class NativeHeadTrackingController internal constructor(
                                         it.copy(enabled = nativeOn, busy = false, available = false, reason = "request_failed")
                                     }
                                 }
-                                if (!spatialEligible) { forceInspect.set(true); delay(100); continue }
+                                if (!spatialEligible) { forceInspect.set(true); delay(POLL_INTERVAL_MILLISECONDS); continue }
                             }
                             val combinedReady = !needsAtmos() || desiredTracking != true || acceptedAtmosEpoch.get() == choiceEpoch.get()
-                            if (session == null && eligible && combinedReady && headTrackingRequested() && mutableState.value.available &&
-                                spatialEligible &&
-                                (explicitOn || nativeOn == true && SystemClock.elapsedRealtime() >= retryAfter.get() &&
-                                    !(failedSocket === socket && failedKey == key))) {
-                                if (explicitOn) { failedSocket = null; failedKey = null; poseFaultReason = null }
+                            val sessionCanStart = session == null && eligible && combinedReady &&
+                                headTrackingRequested() && mutableState.value.available && spatialEligible
+                            if (sessionCanStart && (explicitOn || automaticRestartAllowed(socket, key))) {
+                                if (explicitOn) clearPoseFault()
                                 val live = AtomicBoolean(true)
                                 val recovery = gapRecoveries.forSource(checkNotNull(socket), checkNotNull(key),
                                     checkNotNull(profile), epoch)
@@ -564,7 +625,7 @@ class NativeHeadTrackingController internal constructor(
                     } else { forceInspect.set(true); mutableState.update { it.copy(available = false, spatialAvailable = false) } }
                 } catch (cancelled: CancellationException) { throw cancelled }
                 catch (_: Exception) { mutableState.update { it.copy(available = false, spatialAvailable = false, active = false, reason = "unavailable") } }
-                delay(100)
+                delay(POLL_INTERVAL_MILLISECONDS)
             }
         } finally {
             hostIdle.set(false); guard.cancel()
@@ -606,7 +667,7 @@ class NativeHeadTrackingController internal constructor(
                         withChoice(epoch) { mutableState.update { it.copy(active = false) } }
                         if (enabled) {
                             streamCalibratedHeadMotion(device, motion, profile,
-                                discontinuity.getAndIncrement() and 255, ::owns, sessionTiming,
+                                discontinuity.getAndIncrement() and DISCONTINUITY_COUNTER_MASK, ::owns, sessionTiming,
                                 tryFast = fallbackSocket !== socket, onFallback = { fallbackSocket = socket },
                                 recovery = recovery, recoveryActive = { reporting.value && owns() }) { pose, arrivalNs ->
                                 val frame = HeadTrackerUhidProtocol.little(ByteArray(HeadTrackerUhidProtocol.FRAME_BYTES))
@@ -636,14 +697,14 @@ class NativeHeadTrackingController internal constructor(
         catch (error: Exception) {
             withChoice(epoch) {
                 if (error is CalibratedHeadMotionFault && owns()) {
-                    if (recovery.failed(error.verifiedSensorGap)) retryAfter.set(SystemClock.elapsedRealtime() + 2_000)
+                    if (recovery.failed(error.verifiedSensorGap)) retryAfter.set(SystemClock.elapsedRealtime() + SENSOR_RETRY_DELAY_MILLISECONDS)
                     else { failedSocket = socket; failedKey = key; poseFaultReason = error.message }
                 }
-                else retryAfter.set(SystemClock.elapsedRealtime() + 2_000)
+                else retryAfter.set(SystemClock.elapsedRealtime() + SENSOR_RETRY_DELAY_MILLISECONDS)
                 if (choice != null) pending.compareAndSet(choice, null)
                 mutableState.update { it.copy(enabled = pending.get()?.enabled ?: nativeOn,
                     active = false, busy = pending.get() != null, available = false,
-                    reason = if (failedSocket === socket && failedKey == key) "motion_changed" else "sensor_unavailable") }
+                    reason = if (poseFaultRecordedFor(socket, key)) "motion_changed" else "sensor_unavailable") }
             }
         } finally {
             recovery.withheld()
@@ -667,15 +728,46 @@ class NativeHeadTrackingController internal constructor(
         parentCompletion?.dispose()
         runner.cancel()
     }
+
+    private companion object {
+        /** Shared poll cadence of the runner loop and of the off writer waiting for root. */
+        const val POLL_INTERVAL_MILLISECONDS = 100L
+        /** Cadence of the host audio/telephony idle check. */
+        const val HOST_CHECK_INTERVAL_MILLISECONDS = 100L
+        /** Oldest host idle check that still lets the head-tracking source run. */
+        const val HOST_CHECK_MAXIMUM_AGE_MILLISECONDS = 500L
+        /** A pending choice not applied by then is reported as failed; also caps the off writer waiting for root. */
+        const val PENDING_CHOICE_TIMEOUT_MILLISECONDS = 5_000L
+        /** Minimum spacing between native spatial audio inspections unless one is forced. */
+        const val INSPECTION_INTERVAL_MILLISECONDS = 1_000L
+        /** Minimum spacing between attempts to re-arm the saved choice. */
+        const val REARM_MINIMUM_INTERVAL_MILLISECONDS = 1_000L
+        /** Back-off before the runner restarts a sensor session that failed without a pose fault. */
+        const val SENSOR_RETRY_DELAY_MILLISECONDS = 2_000L
+        /** Discontinuity counters wrap within one byte. */
+        const val DISCONTINUITY_COUNTER_MASK = 0xFF
+        /** The head-from-raw basis is a 3x3 matrix of doubles. */
+        const val HEAD_FROM_RAW_MATRIX_BYTES = 3 * 3 * Double.SIZE_BYTES
+        const val EXTERNAL_MOTION_IDENTITY_VERSION = 1
+    }
 }
 
 @Suppress("DEPRECATION")
-internal val nativeSpatialVersion get() = BuildConfig.DEBUG || android.os.Build.VERSION.SDK_INT == 37
+internal val nativeSpatialVersion get() = BuildConfig.DEBUG || android.os.Build.VERSION.SDK_INT == NATIVE_HEAD_TRACKING_SDK_VERSION
+
+/** The one Android API level on which release builds drive native spatial head tracking. */
+private const val NATIVE_HEAD_TRACKING_SDK_VERSION = 37
+/** Schema version of the spatial audio and Atmos snapshots this controller understands. */
+private const val SUPPORTED_SNAPSHOT_VERSION = 1
 
 private fun Bundle.flag(name: String) = get(name) as? Boolean
 
-private fun Bundle.spatialEnabled(): Boolean? = if (getInt("version", 0) == 1 && flag("known") == true &&
-    flag("enabled") != null && flag("device_enabled") != null) flag("enabled") == true && flag("device_enabled") == true else null
+private fun Bundle.knownSnapshot() = getInt("version", 0) == SUPPORTED_SNAPSHOT_VERSION && flag("known") == true
+
+private fun Bundle.spatialEnabled(): Boolean? {
+    if (!knownSnapshot() || flag("enabled") == null || flag("device_enabled") == null) return null
+    return flag("enabled") == true && flag("device_enabled") == true
+}
 
 internal data class HeadTrackingSourceRejection(val reason: String, val atMs: Long,
     val hostCheckedAtMs: Long? = null, val hostIdle: Boolean? = null) {
@@ -688,7 +780,7 @@ internal data class HeadTrackingSourceRejection(val reason: String, val atMs: Lo
 }
 
 internal fun acceptedAtmosSpatial(result: Bundle, spatial: Boolean, tracking: Boolean, epoch: Long): Boolean =
-    epoch > 0 && (!tracking || spatial) && result.getInt("version", 0) == 1 &&
+    epoch > 0 && (!tracking || spatial) && result.getInt("version", 0) == SUPPORTED_SNAPSHOT_VERSION &&
         result.flag("supported") == true && result.flag("known") == true &&
         result.flag("desired_spatial") == spatial && result.flag("desired_tracking") == tracking &&
         result.getLong("accepted_generation", -1) == epoch

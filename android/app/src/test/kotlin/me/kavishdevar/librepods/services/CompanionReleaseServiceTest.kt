@@ -9,8 +9,6 @@ import android.content.Context
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.coroutines.Continuation
-import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -60,12 +58,17 @@ class CompanionReleaseServiceTest {
 
     @Before fun setUp() = runBlocking<Unit> {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        service = spy(Robolectric.buildService(LibrePodsService::class.java).get())
+        val real = Robolectric.buildService(LibrePodsService::class.java).get()
+        service = spy(real)
         app = LibrePodsApplication()
-        ReflectionHelpers.setField(service, "mApplication", app)
-        field("companionHoldReady").set(service, true)
-        field("companionBridge\$delegate").set(service, lazyOf(bridge))
-        field("companionHoldStore\$delegate").set(service, lazyOf(mock(CompanionHoldStore::class.java)))
+        val holdStore = mock(CompanionHoldStore::class.java)
+        // The service's helper classes call back into the real instance, not the spy, so both get the fakes.
+        for (target in listOf(real, service)) {
+            ReflectionHelpers.setField(target, "mApplication", app)
+            field("companionBridge\$delegate").set(target, lazyOf(bridge))
+            field("companionHoldStore\$delegate").set(target, lazyOf(holdStore))
+        }
+        holdsField("ready").set(companionHolds(), true)
         `when`(bridge.hasRootPrivileges).thenReturn(true)
         `when`(bridge.state).thenReturn(MutableStateFlow(BridgeState(connected = true)))
         `when`(game.state).thenReturn(MutableStateFlow(NativeGameModeController.State()))
@@ -205,14 +208,13 @@ class CompanionReleaseServiceTest {
         }.apply { isAccessible = true }.invoke(service, address.value)
     }
 
-    private suspend fun release(): String = suspendCoroutineUninterceptedOrReturn { continuation ->
-        LibrePodsService::class.java.getDeclaredMethod("companionOperation", String::class.java, String::class.java,
-            Function0::class.java, Continuation::class.java).apply { isAccessible = true }
-            .invoke(service, "release", address.value, { intentCurrent.get() }, continuation)
-    }
+    private suspend fun release(): String = handoffHost().companionOperation("release", address.value) { intentCurrent.get() }
 
     @Suppress("UNCHECKED_CAST")
     private fun devices() = field("_devices").get(service) as MutableStateFlow<Map<MacAddress, Device<*, *, *>>>
     private fun anyCurrent(): () -> Boolean = any<() -> Boolean>() ?: { true }
+    private fun companionHolds() = field("companionHolds").get(service) as CompanionHolds
+    private fun holdsField(name: String) = CompanionHolds::class.java.getDeclaredField(name).apply { isAccessible = true }
+    private fun handoffHost() = field("handoffHost").get(service) as CompanionHandoffHost
     private fun field(name: String) = LibrePodsService::class.java.getDeclaredField(name).apply { isAccessible = true }
 }

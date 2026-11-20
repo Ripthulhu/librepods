@@ -288,9 +288,7 @@ class EarDetectionOwnershipTest {
     }
 
     private fun dispatchChange(previous: Set<DeviceComponentState>, current: Set<DeviceComponentState>, source: BluetoothSocket) {
-        LibrePodsService::class.java.getDeclaredMethod("processComponentStateChange", Device::class.java,
-            Set::class.java, Set::class.java, BluetoothSocket::class.java).apply { isAccessible = true }
-            .invoke(service, device, previous, current, source)
+        (field("wearMedia").get(service) as WearMediaController).onComponentStateChange(device, previous, current, source)
     }
 
     private fun noProfileChanges() {

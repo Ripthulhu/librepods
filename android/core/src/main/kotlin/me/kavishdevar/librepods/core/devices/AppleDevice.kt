@@ -48,7 +48,6 @@ import me.kavishdevar.librepods.core.bluetooth.aacp.publishForTransport
 import me.kavishdevar.librepods.core.data.StemAction
 import me.kavishdevar.librepods.core.data.StemPressBud
 import me.kavishdevar.librepods.core.data.StemPressType
-import me.kavishdevar.librepods.core.data.apple.BuddyState
 import me.kavishdevar.librepods.core.data.audio.MicrophoneFrame
 import me.kavishdevar.librepods.core.data.audio.MicrophoneState
 import me.kavishdevar.librepods.core.data.recording.Recording

@@ -124,7 +124,7 @@ class NearbyDeviceConnectionTest {
         shadowOf(RuntimeEnvironment.getApplication()).grantPermissions(
             Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN)
         ReflectionHelpers.setField(service, "mApplication", app)
-        field("companionHoldReady").set(service, true)
+        holdsField("ready").set(companionHolds(), true)
         field("companionHoldStore\$delegate").set(service, lazy { holdStore })
         ReflectionHelpers.setField(app, "islandWindow", mock(IslandWindow::class.java))
         `when`(bluetooth.address).thenReturn(address.value)
@@ -250,9 +250,9 @@ class NearbyDeviceConnectionTest {
             connectionState.value = ConnectionState.AVAILABLE
             publishOutput()
             @Suppress("UNCHECKED_CAST")
-            val held = field("companionReleased").get(service) as MutableSet<MacAddress>
+            val held = holdsField("released").get(companionHolds()) as MutableSet<MacAddress>
             @Suppress("UNCHECKED_CAST")
-            val operations = field("companionOperations").get(service) as MutableMap<MacAddress, Any>
+            val operations = handoffField("operations").get(handoffHost()) as MutableMap<MacAddress, Any>
             for (releaseStarted in listOf(true, false)) {
                 val callback = launch(start = CoroutineStart.UNDISPATCHED) { attachNativeAudio() }
                 assertTrue("The admitted callback must wait for its Main dispatch", callback.isActive)
@@ -269,7 +269,7 @@ class NearbyDeviceConnectionTest {
     @Test fun aRestoredHoldAllowsExistingRouteControlButOnlyAnExplicitConnectClearsThatPair() = runBlocking<Unit> {
         val other = "00:11:22:33:44:66"
         holdStore.save(setOf(address.value, other))
-        LibrePodsService::class.java.getDeclaredMethod("restoreCompanionHolds").apply { isAccessible = true }.invoke(service)
+        companionHolds().restore()
         connectionState.value = ConnectionState.AVAILABLE
         publishOutput()
         attachNativeAudio()
@@ -293,7 +293,7 @@ class NearbyDeviceConnectionTest {
         `when`(adapter.isEnabled).thenReturn(true)
         Shadow.extract<ShadowContextImpl>(service.baseContext).setSystemService(Context.BLUETOOTH_SERVICE, bluetoothManager)
         holdStore.save(setOf(address.value))
-        LibrePodsService::class.java.getDeclaredMethod("restoreCompanionHolds").apply { isAccessible = true }.invoke(service)
+        companionHolds().restore()
         connectionState.value = ConnectionState.AVAILABLE
         publishOutput()
         `when`(device.connect(anyCurrent(), anyPending())).thenAnswer { invocation ->
@@ -426,7 +426,7 @@ class NearbyDeviceConnectionTest {
 
     @Test fun unreadableHoldStorageBlocksPassiveAndExplicitConnections() = runBlocking<Unit> {
         heldFile.baseFile.writeText("not valid")
-        LibrePodsService::class.java.getDeclaredMethod("restoreCompanionHolds").apply { isAccessible = true }.invoke(service)
+        companionHolds().restore()
         connectionState.value = ConnectionState.AVAILABLE
         publishOutput()
         attachNativeAudio()
@@ -437,13 +437,13 @@ class NearbyDeviceConnectionTest {
 
     @Test fun aFailedDurableClearCannotAcquireOrEraseTheRuntimeHold() = runBlocking<Unit> {
         holdStore.save(setOf(address.value))
-        LibrePodsService::class.java.getDeclaredMethod("restoreCompanionHolds").apply { isAccessible = true }.invoke(service)
+        companionHolds().restore()
         val failing = spy(heldFile)
         doThrow(IOException("Write unavailable")).`when`(failing).startWrite()
         field("companionHoldStore\$delegate").set(service, lazyOf(CompanionHoldStore(failing)))
         publishOutput()
         assertFalse(service.connectNearbyDevice(device))
-        assertTrue((field("companionReleased").get(service) as Set<*>).contains(address))
+        assertTrue((holdsField("released").get(companionHolds()) as Set<*>).contains(address))
         assertEquals(setOf(address.value), CompanionHoldStore(heldFile).load())
         verifyNoInteractions(bridge)
     }
@@ -1041,8 +1041,8 @@ class NearbyDeviceConnectionTest {
         `when`(bluetooth.bondState).thenReturn(BluetoothDevice.BOND_NONE)
         receive(Intent(BluetoothDevice.ACTION_BOND_STATE_CHANGED).putExtra(BluetoothDevice.EXTRA_DEVICE, bluetooth))
         assertFalse(service.shouldDeferNearbyConnect(device))
-        assertTrue((field("nearbyMedia").get(service) as Map<*, *>).isEmpty())
-        assertTrue((field("nearbyCases").get(service) as Map<*, *>).isEmpty())
+        assertTrue((deferralField("nearbyMedia").get(deferral()) as Map<*, *>).isEmpty())
+        assertTrue((deferralField("nearbyCases").get(deferral()) as Map<*, *>).isEmpty())
     }
 
     @Test fun replacingTheDeviceInstanceRetiresItsHintsAndRejectsOldLidObservations() {
@@ -1059,9 +1059,10 @@ class NearbyDeviceConnectionTest {
         assertFalse(caseLid(false))
     }
 
-    private fun caseLid(open: Boolean): Boolean = LibrePodsService::class.java
-        .getDeclaredMethod("observeNearbyCase", AppleDevice::class.java, Boolean::class.javaPrimitiveType)
-        .apply { isAccessible = true }.invoke(service, device, open) as Boolean
+    private fun caseLid(open: Boolean): Boolean = deferral().observeCase(device, open)
+
+    private fun deferral() = field("nearbyDeferral").get(service) as NearbyConnectDeferral
+    private fun deferralField(name: String) = NearbyConnectDeferral::class.java.getDeclaredField(name).apply { isAccessible = true }
 
     private suspend fun attachNativeAudio(): Unit = suspendCoroutineUninterceptedOrReturn { continuation ->
         LibrePodsService::class.java.getDeclaredMethod("onDeviceConnected", BluetoothDevice::class.java, Continuation::class.java)
@@ -1089,5 +1090,9 @@ class NearbyDeviceConnectionTest {
     private fun anyPending(): (BluetoothSocket) -> Unit = any<(BluetoothSocket) -> Unit>() ?: {}
     private fun anySocket(): BluetoothSocket = any<BluetoothSocket>() ?: socketMatcherFallback
     private fun selectedAddress(): String = eq(address.value) ?: address.value
+    private fun companionHolds() = field("companionHolds").get(service) as CompanionHolds
+    private fun holdsField(name: String) = CompanionHolds::class.java.getDeclaredField(name).apply { isAccessible = true }
+    private fun handoffHost() = field("handoffHost").get(service) as CompanionHandoffHost
+    private fun handoffField(name: String) = CompanionHandoffHost::class.java.getDeclaredField(name).apply { isAccessible = true }
     private fun field(name: String) = LibrePodsService::class.java.getDeclaredField(name).apply { isAccessible = true }
 }

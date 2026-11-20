@@ -211,8 +211,6 @@
     <string name="listening_mode_adaptive_description">動態調整外部噪音</string>
     <string name="listening_mode_noise_cancellation_description">阻隔外部聲音</string>
     <string name="contact">聯絡</string>
-    <string name="email">電子郵件</string>
-    <string name="github_issues">GitHub Issues</string>
     <string name="version_code">版本代碼</string>
     <string name="build_type">建置類型</string>
     <string name="no">否</string>

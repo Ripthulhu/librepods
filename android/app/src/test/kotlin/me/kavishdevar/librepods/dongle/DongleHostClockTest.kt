@@ -47,7 +47,7 @@ class DongleHostClockTest {
             assertEquals(SettingsReadStatus.AVAILABLE, state.value.hearingAidReadStatus)
             repeat(3) { retry() }
             assertEquals(1, clocks().size)
-            assertNotNull(field("hostClockOwner").get(controller))
+            assertNotNull(readsField("hostClockOwner").get(field("automaticReads").get(controller)))
             assertNull(firmware.token)
         }
     }
@@ -59,7 +59,7 @@ class DongleHostClockTest {
             refresh()
             assertEquals(2, clocks().size)
             DongleController::class.java.getDeclaredMethod("clearReports").apply { isAccessible = true }.invoke(controller)
-            assertNull(field("hostClockOwner").get(controller))
+            assertNull(readsField("hostClockOwner").get(field("automaticReads").get(controller)))
             state.value = state.value.copy(metadata = AppleMetadata(modelNumber = "A3063"))
             refresh()
             assertEquals(3, clocks().size)
@@ -75,7 +75,7 @@ class DongleHostClockTest {
             }
             refresh()
             assertTrue(clocks().isEmpty())
-            assertNull(field("hostClockOwner").get(controller))
+            assertNull(readsField("hostClockOwner").get(field("automaticReads").get(controller)))
         }
     }
 
@@ -85,7 +85,7 @@ class DongleHostClockTest {
                 state.value = state.value.copy(controlSession = state.value.controlSession + 1) }
             refresh()
             assertTrue(clocks().isEmpty())
-            assertNull(field("hostClockOwner").get(controller))
+            assertNull(readsField("hostClockOwner").get(field("automaticReads").get(controller)))
             assertNull(firmware.token)
         }
     }
@@ -98,11 +98,11 @@ class DongleHostClockTest {
             }
             refresh()
             assertEquals(1, clocks().size)
-            assertNull(field("hostClockOwner").get(controller))
+            assertNull(readsField("hostClockOwner").get(field("automaticReads").get(controller)))
             clockReply = { byteArrayOf() }
             refresh()
             assertEquals(2, clocks().size)
-            assertNotNull(field("hostClockOwner").get(controller))
+            assertNotNull(readsField("hostClockOwner").get(field("automaticReads").get(controller)))
         }
     }
 
@@ -114,7 +114,7 @@ class DongleHostClockTest {
             repeat(5) { retry() }
             assertEquals(3, clocks().size)
             assertEquals(SettingsReadStatus.AVAILABLE, state.value.hearingAidReadStatus)
-            assertNull(field("hostClockOwner").get(controller))
+            assertNull(readsField("hostClockOwner").get(field("automaticReads").get(controller)))
             assertNull(firmware.token)
         }
     }
@@ -127,7 +127,7 @@ class DongleHostClockTest {
                 repeat(5) {
                     if (it > 0) ShadowSystemClock.advanceBy(Duration.ofSeconds(6))
                     expectBusy()
-                    assertEquals(0, field("healthAttempts").getInt(controller))
+                    assertEquals(0, readsField("healthAttempts").getInt(field("automaticReads").get(controller)))
                     val attempts = firmware.actions.count { action -> action == 0 }
                     repeat(4) { refresh() }
                     assertEquals(attempts, firmware.actions.count { action -> action == 0 })
@@ -139,7 +139,7 @@ class DongleHostClockTest {
             retry()
             assertEquals(SettingsReadStatus.AVAILABLE, state.value.hearingAidReadStatus)
             assertEquals(1, clocks().size)
-            assertEquals(1, field("healthAttempts").getInt(controller))
+            assertEquals(1, readsField("healthAttempts").getInt(field("automaticReads").get(controller)))
             assertNull(firmware.token)
         }
     }
@@ -158,13 +158,13 @@ class DongleHostClockTest {
                 }
                 expectBusy()
                 assertTrue(retired)
-                assertEquals(0, field("healthAttempts").getInt(controller))
-                assertNull(field("healthAttemptOwner").get(controller))
+                assertEquals(0, readsField("healthAttempts").getInt(field("automaticReads").get(controller)))
+                assertNull(readsField("healthAttemptOwner").get(field("automaticReads").get(controller)))
             }
             state.value = state.value.copy(metadata = AppleMetadata(modelNumber = "A3063"))
             refresh()
             assertEquals(SettingsReadStatus.AVAILABLE, state.value.hearingAidReadStatus)
-            assertEquals(1, field("healthAttempts").getInt(controller))
+            assertEquals(1, readsField("healthAttempts").getInt(field("automaticReads").get(controller)))
             assertEquals(1, clocks().size)
         }
     }
@@ -173,14 +173,14 @@ class DongleHostClockTest {
         fixture {
             var blocked = false
             beforeExchange = { _, id ->
-                if (!blocked && id == 2 && field("healthAttempts").getInt(controller) > 0) {
+                if (!blocked && id == 2 && readsField("healthAttempts").getInt(field("automaticReads").get(controller)) > 0) {
                     blocked = true
                     throw DongleBusyException()
                 }
             }
             expectBusy()
             assertTrue(blocked)
-            assertEquals(0, field("healthAttempts").getInt(controller))
+            assertEquals(0, readsField("healthAttempts").getInt(field("automaticReads").get(controller)))
             repeat(3) { refresh() }
             assertTrue(clocks().isEmpty())
             retry()
@@ -265,5 +265,6 @@ class DongleHostClockTest {
 
     companion object {
         private fun field(name: String) = DongleController::class.java.getDeclaredField(name).apply { isAccessible = true }
+        private fun readsField(name: String) = DongleAutomaticReads::class.java.getDeclaredField(name).apply { isAccessible = true }
     }
 }

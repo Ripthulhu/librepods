@@ -189,6 +189,9 @@ jobs:
             android/app/build/overlay-previews/
             android/app/build/calibration-previews/
             android/app/build/reports/lint-results-debug.*
+            android/core/build/reports/lint-results-debug.*
+            android/app/build/reports/detekt/
+            android/core/build/reports/detekt/
             android/app/build/reports/codec-packaging.json
           if-no-files-found: ignore
       - name: Prepare complete debug download

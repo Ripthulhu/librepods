@@ -16,10 +16,14 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+private const val SPATIAL_MOTION_FRAME_VERSION = 1
+private const val SPATIAL_MOTION_FRAME_BYTES = 48
+private const val OWNER_CHECK_INTERVAL_MILLISECONDS = 100L
+
 /** Version 1: 48 little-endian bytes using elapsedRealtimeNanos for the Bluetooth receipt timestamp. */
 internal fun spatialMotionFrame(pose: SpatialPose, arrivalNs: Long): ByteArray =
-    ByteBuffer.allocate(48).order(ByteOrder.LITTLE_ENDIAN).apply {
-        putInt(1)
+    ByteBuffer.allocate(SPATIAL_MOTION_FRAME_BYTES).order(ByteOrder.LITTLE_ENDIAN).apply {
+        putInt(SPATIAL_MOTION_FRAME_VERSION)
         putInt(pose.discontinuity)
         putLong(pose.timestampNs)
         putLong(arrivalNs)
@@ -44,13 +48,14 @@ internal class ExternalSpatialMotion(
     fun watch(): Boolean {
         try {
             owner.linkToDeath(death, 0)
-        } catch (_: Exception) {
+        } catch (expectedLinkFailure: Exception) {
+            // Intentionally broad: native binder errors surface as RemoteException or assorted runtime exceptions.
             retire()
             return false
         }
         scope.launch {
             try {
-                while (available()) delay(100)
+                while (available()) delay(OWNER_CHECK_INTERVAL_MILLISECONDS)
             } finally {
                 retire()
             }
@@ -99,7 +104,8 @@ internal class ExternalSpatialMotion(
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
-            } catch (_: Exception) {
+            } catch (expectedStreamEnd: Exception) {
+                // Intentionally broad: produce is caller-supplied and may fail with anything.
                 // EOF tells the client to retire or acquire a fresh source.
             }
         }.also { job -> job.invokeOnCompletion { retire() } }

@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 package me.kavishdevar.librepods.shizuku
 
+import android.annotation.SuppressLint
 import android.media.AudioAttributes
 import android.media.AudioDeviceInfo
 import android.os.IBinder
@@ -45,6 +46,7 @@ internal class RootHeadTrackerSink(
     @Synchronized fun open(address: String, owner: IPlaybackRecoveryOwner, poses: ParcelFileDescriptor,
         onReportingChanged: (Reporting) -> Unit): Session {
         var session: Session? = null
+        var opened = false
         try {
             caller()
             check(Process.myUid() == 0 && !closed && active == null) { "head_tracker_sink_unavailable" }
@@ -60,12 +62,15 @@ internal class RootHeadTrackerSink(
             requireCurrent(selected, owner)
             active = session
             session.start()
+            opened = true
             return session
-        } catch (error: Throwable) {
-            session?.let { runCatching { owner.asBinder().unlinkToDeath(it, 0) } }
-            runCatching { poses.close() }
-            if (active === session) active = null
-            throw error
+        } finally {
+            // Any failure, including errors, releases what was taken and propagates unchanged.
+            if (!opened) {
+                session?.let { runCatching { owner.asBinder().unlinkToDeath(it, 0) } }
+                runCatching { poses.close() }
+                if (active === session) active = null
+            }
         }
     }
 
@@ -89,7 +94,10 @@ internal class RootHeadTrackerSink(
         private val metrics = HeadTrackerSinkMetrics()
         override val stats get() = metrics.snapshot()
 
-        private fun stop(reason: String) { if (stopReason == null) stopReason = reason; stopped.set(true) }
+        private fun stop(reason: String) {
+            if (stopReason == null) stopReason = reason
+            stopped.set(true)
+        }
         override fun close() = stop("closed")
         override fun binderDied() = stop("owner_died")
 
@@ -113,93 +121,10 @@ internal class RootHeadTrackerSink(
                 val descriptor = Os.open("/dev/uhid", OsConstants.O_RDWR or OsConstants.O_CLOEXEC or OsConstants.O_NONBLOCK, 0)
                 uhid = descriptor
                 check(OsConstants.S_ISCHR(Os.fstat(descriptor).st_mode)) { "uhid_not_character_device" }
-                val protocol = HeadTrackerUhidProtocol(address)
-                val gate = HeadTrackerPoseGate()
-                val pacer = HeadTrackerReportPacer()
-                send(descriptor, protocol.create())
-                val events = ByteArray(HeadTrackerUhidProtocol.EVENT_BYTES)
-                val frame = ByteArray(HeadTrackerUhidProtocol.FRAME_BYTES)
-                val inputEvent = HeadTrackerUhidProtocol.event(HeadTrackerUhidProtocol.INPUT2)
-                var partial = 0
-                var nextOwnerCheck = 0L
-                val polls = arrayOf(
-                    StructPollfd().apply { fd = descriptor; this.events = OsConstants.POLLIN.toShort() },
-                    StructPollfd().apply { fd = poses.fileDescriptor; this.events = OsConstants.POLLIN.toShort() },
-                )
-                while (!stopped.get()) {
-                    var now = SystemClock.elapsedRealtimeNanos()
-                    if (now >= nextOwnerCheck) {
-                        requireCurrent(address, owner)
-                        check(!stopped.get()) { "head_tracker_cancelled" }
-                        now = SystemClock.elapsedRealtimeNanos()
-                        nextOwnerCheck = now + 250_000_000L
-                    }
-                    var wake = minOf(nextOwnerCheck, gate.deadline)
-                    if (protocol.reporting && gate.hasPose) wake = minOf(wake, pacer.deadline)
-                    val timeout = ((wake - now).coerceAtLeast(0) + 999_999) / 1_000_000
-                    polls.forEach { it.revents = 0 }
-                    try { Os.poll(polls, timeout.coerceAtMost(250).toInt()) }
-                    catch (error: ErrnoException) { if (error.errno == OsConstants.EINTR) continue else throw error }
-                    check(!stopped.get()) { "head_tracker_cancelled" }
-                    val ended = OsConstants.POLLERR or OsConstants.POLLHUP or OsConstants.POLLNVAL
-                    check(polls.none { it.revents.toInt() and ended != 0 }) { "head_tracker_fd_closed" }
-                    if (polls[0].revents.toInt() and OsConstants.POLLIN != 0) {
-                        val count = Os.read(descriptor, events, 0, events.size)
-                        check(count == events.size) { "short_uhid_read" }
-                        protocol.handle(events)?.let { send(descriptor, it) }
-                        halHandshake = protocol.halHandshake
-                        now = SystemClock.elapsedRealtimeNanos()
-                        val changed = Reporting(protocol.reporting, protocol.intervalNanos)
-                        if (changed != reporting) {
-                            gate.reporting(changed.enabled, now)
-                            pacer.reporting(changed.enabled, changed.intervalNanos, now)
-                            if (!changed.enabled) metrics.idle()
-                            reporting = changed
-                            onReportingChanged(changed)
-                        }
-                    }
-                    var received = 0
-                    while (!stopped.get() && received < 32) {
-                        val count = try { Os.read(poses.fileDescriptor, frame, partial, frame.size - partial) }
-                        catch (error: ErrnoException) {
-                            if (error.errno == OsConstants.EAGAIN) break
-                            if (error.errno == OsConstants.EINTR) continue
-                            throw error
-                        }
-                        check(count > 0) { "pose_pipe_eof" }
-                        partial += count
-                        if (partial == frame.size) {
-                            now = SystemClock.elapsedRealtimeNanos()
-                            val pose = HeadTrackerUhidProtocol.decodePose(frame, now)
-                            if (gate.accept(pose, now)) metrics.accepted(pose.timestampNanos, now)
-                            partial = 0; ++received
-                        }
-                    }
-                    if (received == 32) {
-                        polls[1].revents = 0
-                        Os.poll(arrayOf(polls[1]), 0)
-                        check(polls[1].revents.toInt() and ended == 0) { "pose_pipe_closed" }
-                        check(polls[1].revents.toInt() and OsConstants.POLLIN == 0) { "pose_backlog" }
-                    }
-                    now = SystemClock.elapsedRealtimeNanos()
-                    gate.checkFresh(now)
-                    if (protocol.reporting && gate.hasPose && now >= pacer.deadline) {
-                        val pose = gate.pose(now)
-                        val emitted = pose?.let { HeadTrackerUhidProtocol.poseAtHostTime(it, now) }
-                        if (pose == null || emitted == null) {
-                            metrics.skipped(pacer.deadline, now, reporting.intervalNanos)
-                        } else {
-                            HeadTrackerUhidProtocol.input(emitted, inputEvent)
-                            val submittedAt = SystemClock.elapsedRealtimeNanos()
-                            send(descriptor, inputEvent)
-                            metrics.input(pose.timestampNanos, submittedAt, emitted !== pose,
-                                pacer.deadline, reporting.intervalNanos)
-                        }
-                        pacer.advance(SystemClock.elapsedRealtimeNanos())
-                    }
-                }
-            } catch (error: Exception) {
-                if (!stopped.get()) { stop("sink_failed"); Log.w("RootHeadTrackerSink", "Head tracker sink stopped", error) }
+                UhidPump(descriptor).run()
+            } catch (expectedFailure: Exception) {
+                // Any failure ends this sink; the owner learns it from isClosed and stopReason.
+                if (!stopped.get()) { stop("sink_failed"); Log.w("RootHeadTrackerSink", "Head tracker sink stopped", expectedFailure) }
             } finally {
                 stopped.set(true)
                 reporting = reporting.copy(enabled = false)
@@ -212,15 +137,144 @@ internal class RootHeadTrackerSink(
                 synchronized(this@RootHeadTrackerSink) { if (active === this) active = null }
             }
         }
+
+        /** Serves one UHID device: answers host requests and forwards fresh poses until stopped. */
+        private inner class UhidPump(private val descriptor: FileDescriptor) {
+            private val protocol = HeadTrackerUhidProtocol(address)
+            private val gate = HeadTrackerPoseGate()
+            private val pacer = HeadTrackerReportPacer()
+            private val inputEvent = HeadTrackerUhidProtocol.event(HeadTrackerUhidProtocol.INPUT2)
+            private val events = ByteArray(HeadTrackerUhidProtocol.EVENT_BYTES)
+            private val frame = ByteArray(HeadTrackerUhidProtocol.FRAME_BYTES)
+            private var partial = 0
+            private var nextOwnerCheck = 0L
+            private val uhidPoll = StructPollfd().apply { fd = descriptor; this.events = OsConstants.POLLIN.toShort() }
+            private val posePoll = StructPollfd().apply { fd = poses.fileDescriptor; this.events = OsConstants.POLLIN.toShort() }
+            private val polls = arrayOf(uhidPoll, posePoll)
+            private val ended = OsConstants.POLLERR or OsConstants.POLLHUP or OsConstants.POLLNVAL
+
+            fun run() {
+                send(descriptor, protocol.create())
+                while (!stopped.get()) {
+                    if (!poll(checkOwnerWhenDue())) continue
+                    check(!stopped.get()) { "head_tracker_cancelled" }
+                    check(polls.none { it.revents.toInt() and ended != 0 }) { "head_tracker_fd_closed" }
+                    if (uhidPoll.revents.toInt() and OsConstants.POLLIN != 0) answerUhidEvent()
+                    if (readPoses() == MAX_POSES_PER_WAKE) checkPoseBacklog()
+                    sendDuePose()
+                }
+            }
+
+            /** Returns the current time after any owner check. */
+            private fun checkOwnerWhenDue(): Long {
+                var now = SystemClock.elapsedRealtimeNanos()
+                if (now >= nextOwnerCheck) {
+                    requireCurrent(address, owner)
+                    check(!stopped.get()) { "head_tracker_cancelled" }
+                    now = SystemClock.elapsedRealtimeNanos()
+                    nextOwnerCheck = now + OWNER_CHECK_INTERVAL_NANOS
+                }
+                return now
+            }
+
+            /** Waits for the next event or deadline; returns false when the wait was interrupted. */
+            private fun poll(now: Long): Boolean {
+                var wake = minOf(nextOwnerCheck, gate.deadline)
+                if (protocol.reporting && gate.hasPose) wake = minOf(wake, pacer.deadline)
+                val timeout = ((wake - now).coerceAtLeast(0) + 999_999) / 1_000_000
+                polls.forEach { it.revents = 0 }
+                try { Os.poll(polls, timeout.coerceAtMost(MAX_POLL_MILLISECONDS).toInt()) }
+                catch (error: ErrnoException) { if (error.errno == OsConstants.EINTR) return false else throw error }
+                return true
+            }
+
+            private fun answerUhidEvent() {
+                val count = Os.read(descriptor, events, 0, events.size)
+                check(count == events.size) { "short_uhid_read" }
+                protocol.handle(events)?.let { send(descriptor, it) }
+                halHandshake = protocol.halHandshake
+                val now = SystemClock.elapsedRealtimeNanos()
+                val changed = Reporting(protocol.reporting, protocol.intervalNanos)
+                if (changed != reporting) {
+                    gate.reporting(changed.enabled, now)
+                    pacer.reporting(changed.enabled, changed.intervalNanos, now)
+                    if (!changed.enabled) metrics.idle()
+                    reporting = changed
+                    onReportingChanged(changed)
+                }
+            }
+
+            /** Drains up to MAX_POSES_PER_WAKE complete frames; returns how many were accepted. */
+            private fun readPoses(): Int {
+                var received = 0
+                while (!stopped.get() && received < MAX_POSES_PER_WAKE) {
+                    val count = readPoseBytes() ?: break
+                    check(count > 0) { "pose_pipe_eof" }
+                    partial += count
+                    if (partial == frame.size) {
+                        val now = SystemClock.elapsedRealtimeNanos()
+                        val pose = HeadTrackerUhidProtocol.decodePose(frame, now)
+                        if (gate.accept(pose, now)) metrics.accepted(pose.timestampNanos, now)
+                        partial = 0; ++received
+                    }
+                }
+                return received
+            }
+
+            /** Retries interrupted reads; returns null once the pipe is drained or the sink stopped. */
+            private fun readPoseBytes(): Int? {
+                while (!stopped.get()) {
+                    try { return Os.read(poses.fileDescriptor, frame, partial, frame.size - partial) }
+                    catch (error: ErrnoException) {
+                        if (error.errno == OsConstants.EAGAIN) return null
+                        if (error.errno != OsConstants.EINTR) throw error
+                    }
+                }
+                return null
+            }
+
+            /** A full batch must have emptied the pipe; anything left means the writer outpaces this sink. */
+            private fun checkPoseBacklog() {
+                posePoll.revents = 0
+                Os.poll(arrayOf(posePoll), 0)
+                check(posePoll.revents.toInt() and ended == 0) { "pose_pipe_closed" }
+                check(posePoll.revents.toInt() and OsConstants.POLLIN == 0) { "pose_backlog" }
+            }
+
+            private fun sendDuePose() {
+                val now = SystemClock.elapsedRealtimeNanos()
+                gate.checkFresh(now)
+                if (!protocol.reporting || !gate.hasPose || now < pacer.deadline) return
+                val pose = gate.pose(now)
+                val emitted = pose?.let { HeadTrackerUhidProtocol.poseAtHostTime(it, now) }
+                if (pose == null || emitted == null) {
+                    metrics.skipped(pacer.deadline, now, reporting.intervalNanos)
+                } else {
+                    HeadTrackerUhidProtocol.input(emitted, inputEvent)
+                    val submittedAt = SystemClock.elapsedRealtimeNanos()
+                    send(descriptor, inputEvent)
+                    metrics.input(pose.timestampNanos, submittedAt, emitted !== pose,
+                        pacer.deadline, reporting.intervalNanos)
+                }
+                pacer.advance(SystemClock.elapsedRealtimeNanos())
+            }
+        }
     }
 
     @Synchronized override fun close() { closed = true; active?.close() }
 
+    private companion object {
+        const val OWNER_CHECK_INTERVAL_NANOS = 250_000_000L
+        const val MAX_POLL_MILLISECONDS = 250L
+        const val MAX_POSES_PER_WAKE = 32
+    }
+
     /** Exact selected native A2DP route only; no context attribution or mutating APIs. */
     internal class NativeA2dpRoute {
-        private val api = Class.forName("android.media.IAudioService")
-        private val attributes = Class.forName("android.media.AudioDeviceAttributes")
-        private val service = Class.forName("android.media.IAudioService\$Stub")
+        // Hidden audio service reflection is how this sink reads the selected route; no public API exposes it.
+        @SuppressLint("PrivateApi") private val api = Class.forName("android.media.IAudioService")
+        @SuppressLint("PrivateApi") private val attributes = Class.forName("android.media.AudioDeviceAttributes")
+        @SuppressLint("PrivateApi") private val service = Class.forName("android.media.IAudioService\$Stub")
             .getMethod("asInterface", IBinder::class.java).invoke(null,
                 checkNotNull(SystemServiceHelper.getSystemService("audio")))
         private val media = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)

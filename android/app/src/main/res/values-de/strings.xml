@@ -213,8 +213,6 @@
     <string name="listening_mode_adaptive_description">Passt externe Geräusche dynamisch an</string>
     <string name="listening_mode_noise_cancellation_description">Blockiert externe Geräusche</string>
     <string name="contact">Kontakt</string>
-    <string name="email">E-Mail</string>
-    <string name="github_issues">GitHub Issues</string>
     <string name="version_code">Version-Code</string>
     <string name="build_type">Build-Typ</string>
     <string name="no">Nein</string>
@@ -237,8 +235,6 @@
     <string name="customizations_unavailable">Anpassungen nicht verfügbar. Verbinde deine AirPods mindestens einmal, um darauf zuzugreifen.</string>
     <string name="xposed_available">Xposed verfügbar</string>
     <string name="app_enabled_in_xposed">App in Xposed aktiviert</string>
-    <string name="subject">Betreff</string>
-    <string name="describe_your_issue">Beschreibe dein Problem</string>
     <string name="eq_low">Tiefen</string>
     <string name="eq_mid">Mitten</string>
     <string name="eq_high">Höhen</string>

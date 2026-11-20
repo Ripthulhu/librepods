@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- shortcut: new spatial-audio copy uses English fallback until translations are contributed. -->
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
-    <string name="spatial_audio_fixed">Fixed Spatial Audio</string>
     <string name="spatial_audio_description">Render supported surround media with a fixed sound stage.</string>
     <string name="spatial_audio_root">Allow root access to control spatial audio on this phone.</string>
     <string name="spatial_audio_connect">Connect your AirPods to this phone.</string>
     <string name="spatial_audio_loading">Checking spatial audio support…</string>
     <string name="spatial_audio_unavailable">Spatial audio is unavailable for the current audio route.</string>
     <string name="spatial_audio_global_disabled">Turn on spatial audio in Android sound settings first.</string>
-    <string name="spatial_audio_change_failed">Couldn’t change spatial audio. Check the connection and try again.</string>
 </resources>

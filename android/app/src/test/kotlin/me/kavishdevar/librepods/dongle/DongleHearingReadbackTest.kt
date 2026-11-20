@@ -190,8 +190,8 @@ class DongleHearingReadbackTest {
                 hearingModes = HearingModes.empty().withReport(hearing).withReport(gate),
                 hearingProfile = checkNotNull(parseHearingAidSettingsResponse(baseline)),
                 hearingAidData = baseline.copyOf(), hearingAidReadStatus = SettingsReadStatus.AVAILABLE)
-            field("profileData").set(controller, baseline.copyOf())
-            field("profileCharacteristic").set(controller, DongleAtt.Characteristic(0x20, 0x12))
+            hearingField("profileData").set(field("hearing").get(controller), baseline.copyOf())
+            hearingField("profileCharacteristic").set(field("hearing").get(controller), DongleAtt.Characteristic(0x20, 0x12))
         }
 
         suspend fun attach() {
@@ -224,6 +224,7 @@ class DongleHearingReadbackTest {
 
     companion object {
         private fun field(name: String) = DongleController::class.java.getDeclaredField(name).apply { isAccessible = true }
+        private fun hearingField(name: String) = DongleHearingRecords::class.java.getDeclaredField(name).apply { isAccessible = true }
         private fun putFloat(data: ByteArray, offset: Int, value: Float) {
             ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN).putFloat(offset, value)
         }

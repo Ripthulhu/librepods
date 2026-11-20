@@ -38,6 +38,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -92,7 +93,8 @@ fun PermissionsPage(
         pendingStep = step
         try {
             launch()
-        } catch (_: Exception) {
+        } catch (expectedLaunchFailure: Exception) {
+            // Any launcher or system failure only cancels this request; the user is told and can retry.
             pendingStep = null
             grantAllStep = null
             Toast.makeText(context, R.string.permission_request_failed, Toast.LENGTH_LONG).show()
@@ -106,7 +108,7 @@ fun PermissionsPage(
     var healthAvailable by remember { mutableStateOf(HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE) }
     var healthGranted by remember { mutableStateOf(false) }
     var healthLoaded by remember { mutableStateOf(false) }
-    var resumeCount by remember { mutableStateOf(0) }
+    var resumeCount by remember { mutableIntStateOf(0) }
     val healthPermission = remember { HealthPermission.getWritePermission(HeartRateRecord::class) }
     val healthClient = remember(healthAvailable) {
         if (healthAvailable) runCatching { HealthConnectClient.getOrCreate(context) }.getOrNull() else null
@@ -121,7 +123,8 @@ fun PermissionsPage(
             } == true
         } catch (cancelled: CancellationException) {
             throw cancelled
-        } catch (_: Exception) {
+        } catch (expectedReadFailure: Exception) {
+            // Health Connect may be missing, unbound or refuse the query; that reads as not granted.
             false
         }
         healthLoaded = true

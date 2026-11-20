@@ -216,8 +216,6 @@
     <string name="show_island_popup">灵动岛弹窗</string>
     <string name="show_island_popup_description">在顶部以灵动岛样式显示连接和接管事件的弹窗。</string>
     <string name="contact">联系方式</string>
-    <string name="email">电子邮件</string>
-    <string name="github_issues">GitHub Issues</string>
     <string name="version_code">版本号</string>
     <string name="build_type">构建类型</string>
     <string name="no">否</string>
@@ -240,8 +238,6 @@
     <string name="customizations_unavailable">个性化设置不可用。请至少连接一次 AirPods 后再使用。</string>
     <string name="xposed_available">Xposed 可用</string>
     <string name="app_enabled_in_xposed">应用已在 Xposed 中启用</string>
-    <string name="subject">主题</string>
-    <string name="describe_your_issue">描述你遇到的问题</string>
     <string name="optimized_charging">优化充电上限</string>
     <string name="optimized_charging_description">AirPods 可学习你的每日用量，并决定何时充电至优化上限以及何时允许完全充电。此上限根据你的每日用量调整，并可在长期内延长电池寿命。\n此设置可能对不受支持的 AirPods 或固件版本较旧的 AirPods 无效。</string>
     <string name="enable_app_in_xposed_or_update_device">请更新你的设备，或在 Xposed 中启用 LibrePods 并重新打开应用以继续。</string>
@@ -271,8 +267,6 @@
     <string name="devices">设备</string>
     <string name="configure_widget">配置小组件</string>
     <string name="welcome_to_appname">欢迎使用</string>
-    <string name="contact_email_supporting_text">直接向开发者求助。回复可能不及时，这个项目只有我一个人在做 :)</string>
-    <string name="contact_github_supporting_text">在 GitHub 仓库中创建 issue。仅在你要提交功能建议、或已确认发现 bug 时使用。开 issue 之前请先向社区求助。</string>
     <string name="error_opening_github_link">无法打开 GitHub 链接</string>
     <string name="scanMode">扫描模式</string>
     <string name="ble_settings">BLE 设置</string>

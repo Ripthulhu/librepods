@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 9.3.2" type="baseline" client="gradle" dependencies="false" name="AGP (9.3.2)" variant="all" version="9.3.2">
+
+    <issue
+        id="GetInstance"
+        message="ECB encryption mode should not be used (was &quot;AES/ECB/NoPadding&quot;)"
+        errorLine1="                Cipher.getInstance(&quot;AES/ECB/NoPadding&quot;).run {"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/me/kavishdevar/librepods/core/bluetooth/ble/CaseBatteryReport.kt"
+            line="23"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="GetInstance"
+        message="ECB encryption mode should not be used (was &quot;AES/ECB/NoPadding&quot;)"
+        errorLine1="                Cipher.getInstance(&quot;AES/ECB/NoPadding&quot;).apply {"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/me/kavishdevar/librepods/core/bluetooth/ble/ProximityReport.kt"
+            line="43"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: img_airpods_4_anc_case.png, img_airpods_4_case.png">
+        <location
+            file="src/main/res-apple/drawable-nodpi/img_airpods_4_case.png"/>
+        <location
+            file="src/main/res-apple/drawable-nodpi/img_airpods_4_anc_case.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: img_airpods_4_anc_left.png, img_airpods_4_left.png">
+        <location
+            file="src/main/res-apple/drawable-nodpi/img_airpods_4_left.png"/>
+        <location
+            file="src/main/res-apple/drawable-nodpi/img_airpods_4_anc_left.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: img_airpods_4_anc_right.png, img_airpods_4_right.png">
+        <location
+            file="src/main/res-apple/drawable-nodpi/img_airpods_4_right.png"/>
+        <location
+            file="src/main/res-apple/drawable-nodpi/img_airpods_4_anc_right.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: img_airpods_5_case.png, img_airpods_5_wireless_case.png">
+        <location
+            file="src/main/res-apple/drawable-nodpi/img_airpods_5_wireless_case.png"/>
+        <location
+            file="src/main/res-apple/drawable-nodpi/img_airpods_5_case.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: img_airpods_5_left.png, img_airpods_5_wireless_left.png">
+        <location
+            file="src/main/res-apple/drawable-nodpi/img_airpods_5_wireless_left.png"/>
+        <location
+            file="src/main/res-apple/drawable-nodpi/img_airpods_5_left.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: img_airpods_5_right.png, img_airpods_5_wireless_right.png">
+        <location
+            file="src/main/res-apple/drawable-nodpi/img_airpods_5_wireless_right.png"/>
+        <location
+            file="src/main/res-apple/drawable-nodpi/img_airpods_5_right.png"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    testImplementation(&quot;junit:junit:4.13.2&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="93"
+            column="24"/>
+    </issue>
+
+</issues>

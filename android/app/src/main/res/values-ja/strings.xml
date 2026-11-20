@@ -215,8 +215,6 @@
     <string name="listening_mode_adaptive_description">周囲のノイズを動的に調整します</string>
     <string name="listening_mode_noise_cancellation_description">周囲の音を遮断します</string>
     <string name="contact">お問い合わせ</string>
-    <string name="email">メール</string>
-    <string name="github_issues">GitHub Issues</string>
     <string name="version_code">バージョンコード</string>
     <string name="build_type">ビルドタイプ</string>
     <string name="no">いいえ</string>
@@ -239,8 +237,6 @@
     <string name="customizations_unavailable">カスタマイズは利用できません。アクセスするにはAirPodsを少なくとも1回接続してください。</string>
     <string name="xposed_available">Xposed利用可能</string>
     <string name="app_enabled_in_xposed">Xposedでアプリが有効</string>
-    <string name="subject">件名</string>
-    <string name="describe_your_issue">問題の詳細を入力してください</string>
     <string name="optimized_charging">最適化された充電上限</string>
     <string name="optimized_charging_description">AirPodsが毎日の使用状況を学習し、最適化された上限まで充電するタイミングと、フル充電を許可するタイミングを判断します。この上限は日々の使用状況に適応し、長期的にバッテリーの寿命を延ばします。\n非対応のAirPodsや古いファームウェアバージョンのAirPodsでは、この設定が反映されない場合があります。</string>
     <string name="enable_app_in_xposed_or_update_device">続行するには、デバイスをアップデートするか、XposedでLibrePodsを有効にしてからアプリを開き直してください。</string>

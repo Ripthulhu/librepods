@@ -201,8 +201,43 @@ resolve it. See the [encoder license boundary](tools/native-owned-fdk-tests/READ
 
 From `android/`, run `./gradlew :app:verifyPixel` with JDK 21 and the SDK/NDK
 versions declared in the project. This runs core and app unit tests, Android
-lint, and debug and minified release APK builds. There is one Android
+lint, detekt, and debug and minified release APK builds. There is one Android
 distribution, with no Play flavors or app-bundle release flow.
+
+### Static analysis
+
+`verifyPixel` runs Android lint and [detekt](https://detekt.dev) on `:app` and
+`:core`. Both fail the build on any finding that is not already recorded in the
+module's baseline, so existing issues do not block work, but new ones do:
+
+- `./gradlew :core:detektMain :app:detektMain` runs detekt with type resolution on
+  production sources (the debug variant; release has no sources of its own). Rules
+  are in `config/detekt/detekt.yml`, which builds on detekt's defaults and turns off
+  pure style rules. Reports go to `<module>/build/reports/detekt/`.
+- `./gradlew :core:lintDebug :app:lintDebug` runs Android lint with warnings treated
+  as errors. Checks that depend on newly published library versions are disabled so
+  an unchanged commit cannot start failing. Reports go to
+  `<module>/build/reports/lint-results-debug.*`.
+
+The baselines are `<module>/detekt-baseline-debug.xml` and
+`<module>/lint-baseline.xml`. **Baselines only shrink.** Fix new findings instead
+of recording them; if a finding is a false positive, suppress it at the site with
+a short reason. When you fix existing findings, regenerate the baseline so the
+fixed entries cannot come back, and check in review that the diff only removes
+entries:
+
+```
+./gradlew :core:detektBaselineMain :app:detektBaselineMain
+./gradlew :core:updateLintBaseline :app:updateLintBaseline
+```
+
+Regenerating to absorb new findings is only acceptable for a deliberate tool or
+rule upgrade (new detekt, lint or AGP version), or right after merging code from
+another repository that does not run these checks. Either way that change should be
+its own commit so the added entries are visible. detekt baseline entries are keyed by rule,
+file, enclosing declaration and a short signature (for caught exceptions, the
+variable name), not by line, so a new identical finding in a function or class
+that already has one can still be masked.
 
 Run `./gradlew :app:collectReleaseArtifacts` to collect the APKs in `release/`
 at the repository root. Release signing uses the existing `RELEASE_STORE_FILE`,

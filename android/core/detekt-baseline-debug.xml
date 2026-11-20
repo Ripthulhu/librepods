@@ -1,0 +1,181 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:AACPManager.kt:AACPManager$!ownsAudioSocket(expected) || device.attOperationPending || (device.state.value.hearingModes.pending != null || device.state.value.accommodationsRequest.pending)</ID>
+    <ID>ComplexCondition:AACPManager.kt:AACPManager$modeWrite != null &amp;&amp; device.state.value.controlStates[controlCommand.identifier] === previousReport &amp;&amp; modeWrite.value.contentEquals(previousReport) &amp;&amp; listeningModeWrites.none { it !== modeWrite &amp;&amp; it.order in 1 until modeWrite.order }</ID>
+    <ID>ComplexCondition:AACPManager.kt:AACPManager$request.cancelled || !stillCurrent() || !ownsAudioSocket(request.original) || !refreshAllowed(request.confirmationOwner, request.hearingMode)</ID>
+    <ID>ComplexCondition:AACPManager.kt:AACPManager$selfMacAddress.length != 17 || !selfMacAddress.matches(Regex("([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}")) || targetMacAddress.length != 17 || !targetMacAddress.matches( Regex("([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}") )</ID>
+    <ID>ComplexCondition:AACPManager.kt:AACPManager$settingsStartup !== startup || captureSettingsSocket() !== startup.socket || startup.readStarted || !scope.isActive</ID>
+    <ID>ComplexCondition:AACPManager.kt:AACPManager$this.socket !== socket || pendingConnect !== pending || pending.cancelled || requestEpoch != connectionEpoch.get() || !allowed || !stillCurrent()</ID>
+    <ID>ComplexCondition:ATTManager.kt:ATTManager$proof == null || !proof.contentEquals(baseline) || !validWrite(handle, requested) || !validWrite(handle, baseline) || requested.size + 3 &gt; active.mtu || !canSend()</ID>
+    <ID>ComplexCondition:ATTManager.kt:ATTManager$session !== active || !active.completedReadsAllowed.get() || !active.owner.same(captureOwner()) || !canRead()</ID>
+    <ID>ComplexCondition:ATTProtocol.kt:ATTBearer$!isCurrent || pdu.size &lt; 3 || pdu[0] != 0x52.toByte() || pdu.u16(1) == 0 || pdu.size &gt; mtu || !canSend()</ID>
+    <ID>ComplexCondition:ATTProtocol.kt:declaration &lt;= previous || declaration &lt;= previousValue || declaration &gt; end || value &lt;= declaration || value &gt; end</ID>
+    <ID>ComplexCondition:Accommodations.kt:AccommodationsPlan$changesRequired &amp;&amp; send == AccommodationsSendOutcome.COMPLETE &amp;&amp; current != null &amp;&amp; current.session != original.session &amp;&amp; current.receptionRevision &gt; 0 &amp;&amp; current.matches(requested)</ID>
+    <ID>ComplexCondition:Accommodations.kt:AccommodationsPlan$changesRequired &amp;&amp; send == AccommodationsSendOutcome.COMPLETE &amp;&amp; sameSession &amp;&amp; current.receptionRevision &gt; original.receptionRevision &amp;&amp; current.matches(requested)</ID>
+    <ID>ComplexCondition:Accommodations.kt:AccommodationsReport.Companion$session &lt;= 0 || receptionRevision &lt;= 0 || hearingAidEnabled != false || sharedGateEnabled != false || !validLegacyAccommodationsPacket(packet)</ID>
+    <ID>ComplexCondition:Accommodations.kt:packet.size != 140 || !packet.copyOfRange(0, 9).contentEquals(pmeHeader) || packet[9] !in byteArrayOf(0, 1, 2) || packet[10] !in byteArrayOf(1, 2) || packet[11] !in byteArrayOf(1, 2)</ID>
+    <ID>ComplexCondition:AllowOff.kt:value == null || value.isEmpty() || value.size &gt; 4 || value.drop(1).any { it != 0.toByte() }</ID>
+    <ID>ComplexCondition:AppleDevice.kt:AppleDevice$!aacp.ownsAudioSocket(transport) || current.controlSession != session || current.accommodationsRequest.editRevision != expectedEditRevision || current.accommodationsRequest.pending || current.hearingModes.pending != null || attOperationPending || current.microphoneState.isActive || aacp.isMicrophoneRequested() || current.hearingModes.accommodationsReport(session)?.let(plan::canStart) != true</ID>
+    <ID>ComplexCondition:AppleDevice.kt:AppleDevice$!aacp.ownsAudioSocket(transport) || state.value.controlSession != requestedSession || state.value.hearingModes !== original || (enabled &amp;&amp; (state.value.microphoneState.isActive || aacp.isMicrophoneRequested()))</ID>
+    <ID>ComplexCondition:AppleDevice.kt:AppleDevice$!current() || (freshSession &amp;&amp; !canRefreshHearingConfirmation(owner, mode)) || !matches(report)</ID>
+    <ID>ComplexCondition:AppleDevice.kt:AppleDevice$!current() || (freshSession &amp;&amp; !canRefreshHearingConfirmation(owner, mode)) || !matches(state.value)</ID>
+    <ID>ComplexCondition:AppleDevice.kt:AppleDevice$!hearingAidSettingsWritable(baseline) || !hearingAidSettingsWritable(requested) || !requested.copyOfRange(0, 4).contentEquals(byteArrayOf(2, 2, 0x64, 0)) || metadata.value.model == AirPodsModel.UNKNOWN || BaseCapability.HEARING_AID !in AirPodsSpecs.getSpec(metadata.value.model).baseCapabilities || modes.enrolled != true || !modes.clinicalReportsKnown</ID>
+    <ID>ComplexCondition:AppleDevice.kt:AppleDevice$!validATTValue(handle, requested) || !validATTValue(handle, baseline) || metadata.value.model == AirPodsModel.UNKNOWN || BaseCapability.LOUD_SOUND_REDUCTION !in AirPodsSpecs.getSpec(metadata.value.model).baseCapabilities</ID>
+    <ID>ComplexCondition:AppleDevice.kt:AppleDevice$event.pressType != StemPressType.LONG_PRESS || !rawHoldActions || holdActionSocket !== event.sourceSocket || !aacp.ownsAudioSocket(event.sourceSocket)</ID>
+    <ID>ComplexCondition:AppleDevice.kt:AppleDevice$expectedTransport != null &amp;&amp; transport !== expectedTransport || expectedSession != null &amp;&amp; snapshot.controlSession != expectedSession</ID>
+    <ID>ComplexCondition:AppleDevice.kt:AppleDevice$freshSession &amp;&amp; current() &amp;&amp; canRefreshHearingConfirmation(owner, mode) &amp;&amp; aacp.captureSettingsSocket() !== transport</ID>
+    <ID>ComplexCondition:AppleDevice.kt:AppleDevice$hearingLock.isLocked || attOperationPending || state.value.hearingModes.pending != null || state.value.accommodationsRequest.pending || !confirmationAudioIdle()</ID>
+    <ID>ComplexCondition:AppleDevice.kt:AppleDevice$it.present &amp;&amp; !it.isLive(now) &amp;&amp; (!connected || caseBatteryComponents[it.component] === it)</ID>
+    <ID>ComplexCondition:AppleDevice.kt:AppleDevice$metadata.value.model == AirPodsModel.UNKNOWN || !receivedPlan.canStart(original) || snapshot.accommodationsRequest.editRevision != expectedEditRevision || !snapshot.accommodationsRequest.editable(original) || attOperationPending || snapshot.microphoneState.isActive || aacp.isMicrophoneRequested()</ID>
+    <ID>ComplexCondition:AppleDevice.kt:AppleDevice$preset != null &amp;&amp; audiogram || (preset != null || audiogram) &amp;&amp; !att.available</ID>
+    <ID>ComplexCondition:AppleDevice.kt:AppleDevice$settings.enabled &amp;&amp; (metadata.value.model == AirPodsModel.UNKNOWN || (BaseCapability.HEARING_AID in AirPodsSpecs.getSpec(metadata.value.model).baseCapabilities &amp;&amp; !modes.customTransparencyAllowed))</ID>
+    <ID>ComplexCondition:CallControls.kt:value == null || value.size !in 2..4 || value[0] != 0.toByte() || value.drop(2).any { it != 0.toByte() }</ID>
+    <ID>ComplexCondition:CaseBatteryReport.kt:CaseBatteryReport.Companion$model != AirPodsModel.AIRPODS_PRO_3 || observedAt &lt; 0 || encryption.size != 16 || encryption.all { it == 0.toByte() }</ID>
+    <ID>ComplexCondition:CaseBatteryReport.kt:CaseBatteryReport.Companion$plain[0] != 0x29.toByte() || plain[1] != 0x20.toByte() || listOf(8, 10, 11).any { plain[it] != 0.toByte() } || plain[2].toInt() and 0xf0 != 0 || (3..5).any { (plain[it].toInt() and 255) != 255 &amp;&amp; (plain[it].toInt() and 127) &gt; 100 }</ID>
+    <ID>ComplexCondition:HearingAid.kt:data.size != 104 || data[0] != 2.toByte() || data[1] !in byteArrayOf(0, 2) || data[2] !in byteArrayOf(0x60, 0x64) || data[3] != 0.toByte()</ID>
+    <ID>ComplexCondition:HearingModes.kt:HearingModes$enabled &amp;&amp; (enrolled != true || gate != (hearing || voice || media))</ID>
+    <ID>ComplexCondition:HearingModes.kt:HearingModes$mode == HearingMode.MEDIA_ASSIST &amp;&amp; (voice != enabled || media != enabled || uncertain == mode)</ID>
+    <ID>ComplexCondition:HearingModes.kt:HearingModes$packet.size == 140 &amp;&amp; packet.take(9) == listOf&lt;Byte&gt;(4, 0, 4, 0, 0x53, 0, 0x84.toByte(), 0, 2) &amp;&amp; packet.sliceArray(9..11).all { (it.toInt() and 255) in 0..2 } &amp;&amp; ByteBuffer.wrap(packet).order(ByteOrder.LITTLE_ENDIAN).let { values -&gt; (12 until 140 step 4).all { values.getFloat(it).isFinite() } }</ID>
+    <ID>ComplexCondition:HearingModes.kt:HearingModes$packet.size &gt;= 9 &amp;&amp; packet.take(6) == listOf&lt;Byte&gt;(4, 0, 4, 0, 0x53, 0) &amp;&amp; !(packet.size == 10 &amp;&amp; packet.sliceArray(6..8).contentEquals(byteArrayOf(2, 0, 1)) &amp;&amp; packet[9] in byteArrayOf(1, 2))</ID>
+    <ID>ComplexCondition:LocalPreferenceEdits.kt:LocalPreferenceEdits$old.relativeConversationAwarenessVolumeEnabled != next.relativeConversationAwarenessVolumeEnabled || old.conversationAwarenessVolume != next.conversationAwarenessVolume || old.conversationAwarenessReducedVolume != next.conversationAwarenessReducedVolume || old.conversationAwarenessPauseMusicEnabled != next.conversationAwarenessPauseMusicEnabled</ID>
+    <ID>ComplexCondition:MotionSourceTiming.kt:MotionSourceTiming$setting.serviceValue != selectedService || setting.setting != 2 || bytes.size() != 5 || bytes.byteAt(0) != 1.toByte()</ID>
+    <ID>ComplexCondition:NearbyAirPods.kt:NearbyAirPods.InvitationProximity$candidate == null || candidate.address != address || (!candidate.admitted &amp;&amp; now - candidate.lastStrong &gt; MAX_GAP_MS)</ID>
+    <ID>ComplexCondition:NearbyAirPods.kt:NearbyAirPods.InvitationProximity$event.modelId !in modelNames || address.isBlank() || now &lt; 0 || observations[event.modelId]?.let { now &lt;= it } == true</ID>
+    <ID>ComplexCondition:NoiseModeCycle.kt:raw == null || raw.isEmpty() || raw.size &gt; 4 || raw.drop(1).any { it != 0.toByte() }</ID>
+    <ID>ComplexCondition:ProximityReport.kt:ProximityReport.Companion$observedAt &lt; 0 || !verifyRPA(address, irk) || encryption.size != 16 || encryption.all { it == 0.toByte() }</ID>
+    <ID>ComplexCondition:RTBuddyManager.kt:RTBuddyManager$closed || !isCurrent() || motionStopping || us !in 20_000..1_000_000 || us % 1000 != 0L</ID>
+    <ID>ComplexCondition:RTBuddyManager.kt:RTBuddyManager$closed || !isCurrent() || service !in 1..127 || value &lt; 0</ID>
+    <ID>ComplexCondition:RTBuddyManager.kt:RTBuddyManager$closed || descriptorsRequested || !isCurrent() || remoteAllowed()</ID>
+    <ID>ComplexCondition:RTBuddyManager.kt:RTBuddyManager$enabled &amp;&amp; us != null &amp;&amp; (us !in 5_000..1_000_000 || interval != us.microseconds)</ID>
+    <ID>ComplexCondition:RTBuddyManager.kt:RTBuddyManager$motionLive != null || suspended || !motionWanted || !isCurrent()</ID>
+    <ID>ComplexCondition:RTBuddyManager.kt:RTBuddyManager$packet.kind == 2 &amp;&amp; packet.device == remoteService &amp;&amp; motionLive == packet.device &amp;&amp; packet.payload.size == 58 &amp;&amp; motionWanted &amp;&amp; !suspended &amp;&amp; !motionStopping</ID>
+    <ID>ComplexCondition:RecentProximityReports.kt:RecentProximityReports$observedAt &lt; 0 || observedNanos &lt; 0 || observedNanos &gt; nowNanos || nowNanos - observedNanos &gt;= MAX_AGE_NANOS</ID>
+    <ID>ComplexCondition:SensorReports.kt:SensorReports$!((data.logType in setOf(1, 3) &amp;&amp; packed.size in setOf(58, 60)) || (data.logType == 5 &amp;&amp; packed.size == 58)) || packed[0].toInt() and 255 != service || packed[1] != 0.toByte()</ID>
+    <ID>ComplexCondition:SensorReports.kt:SensorReports$bytes.size != 18 || bytes[1].toInt() and 255 !in 30..220 || bytes[2].toInt() and 255 &lt; 0x80 || HEART_TAILS.none { it.indices.all { index -&gt; it[index] == bytes[15 + index] } }</ID>
+    <ID>ComplexCondition:SensorReports.kt:SensorReports$bytes.size !in setOf(56, 58) || (bytes.size == 56 &amp;&amp; (motionService == null || bytes[0] != 1.toByte()))</ID>
+    <ID>ComplexCondition:SensorReports.kt:SensorReports$packed.isEmpty() &amp;&amp; data.hasCommand() &amp;&amp; data.logType in setOf(1, 3) &amp;&amp; data.command.serviceValue == service</ID>
+    <ID>ComplexCondition:SmartRoutingPacket.kt:packet.size !in 16..1024 || !packet.copyOfRange(0, 6).contentEquals(byteArrayOf(4, 0, 4, 0, 0x11, 0)) || (packet[12].toInt() and 255 or ((packet[13].toInt() and 255) shl 8)) != packet.size - 14 || packet[14] != 1.toByte()</ID>
+    <ID>ComplexCondition:Transparency.kt:transparencySettings.leftEQ.size != 8 || transparencySettings.rightEQ.size != 8 || (transparencySettings.ownVoiceAmplification != null &amp;&amp; baseline.size &lt; 104)</ID>
+    <ID>ComplexCondition:Types.kt:(!battery.present || battery.status == BatteryStatus.UNKNOWN) &amp;&amp; retainUnavailable &amp;&amp; old != null &amp;&amp; old.status != BatteryStatus.UNKNOWN &amp;&amp; old.level in 0..100 &amp;&amp; old.observedAt != null</ID>
+    <ID>ComplexCondition:Utils.kt:irk.size != 16 || irk.all { it == 0.toByte() } || !Regex("[0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5}").matches(addr) || addr.substring(0, 2).toInt(16) and 0xc0 != 0x40</ID>
+    <ID>CyclomaticComplexMethod:AACPManager.kt:AACPManager$@OptIn(ExperimentalStdlibApi::class) fun processPacket</ID>
+    <ID>CyclomaticComplexMethod:AACPManager.kt:AACPManager$fun refreshControlSession: Boolean</ID>
+    <ID>CyclomaticComplexMethod:AACPManager.kt:AACPManager$fun sendControlCommand: Boolean</ID>
+    <ID>CyclomaticComplexMethod:AACPManager.kt:AACPManager$private fun connect: Boolean</ID>
+    <ID>CyclomaticComplexMethod:AACPManager.kt:AACPManager$private suspend fun initializeConnection</ID>
+    <ID>CyclomaticComplexMethod:ATTManager.kt:ATTManager$internal suspend fun writeCharacteristic: Boolean</ID>
+    <ID>CyclomaticComplexMethod:ATTManager.kt:ATTManager$private suspend fun connect: Session?</ID>
+    <ID>CyclomaticComplexMethod:ATTProtocol.kt:ATTBearer$fun receive</ID>
+    <ID>CyclomaticComplexMethod:ATTProtocol.kt:ATTBearer$fun request: ByteArray</ID>
+    <ID>CyclomaticComplexMethod:ATTProtocol.kt:internal fun discoverATTSettings: Map&lt;ATTHandle, ATTCharacteristic&gt;</ID>
+    <ID>CyclomaticComplexMethod:AppleDevice.kt:AppleDevice$internal suspend fun readInitialATTCharacteristics</ID>
+    <ID>CyclomaticComplexMethod:AppleDevice.kt:AppleDevice$private fun receiveNearbyBattery</ID>
+    <ID>CyclomaticComplexMethod:AppleDevice.kt:AppleDevice$private suspend fun readATTCharacteristic: ByteArray?</ID>
+    <ID>CyclomaticComplexMethod:AppleDevice.kt:AppleDevice$private suspend fun setHearingMode: Boolean</ID>
+    <ID>CyclomaticComplexMethod:AppleDevice.kt:AppleDevice$suspend fun setAccommodations: AccommodationsResult</ID>
+    <ID>CyclomaticComplexMethod:AppleDevice.kt:AppleDevice$suspend fun writeATTCharacteristic: Boolean</ID>
+    <ID>CyclomaticComplexMethod:CaseBatteryReport.kt:CaseBatteryReport.Companion$fun decode: CaseBatteryReport?</ID>
+    <ID>CyclomaticComplexMethod:GestureDetector.kt:GestureDetector$fun processHeadOrientation: Unit</ID>
+    <ID>CyclomaticComplexMethod:GestureDetector.kt:GestureDetector$private fun processDirectionChanges: Boolean?</ID>
+    <ID>CyclomaticComplexMethod:GestureFeedback.kt:GestureFeedback$fun playDirectional</ID>
+    <ID>CyclomaticComplexMethod:HearingModes.kt:HearingModes$fun plan: HearingModePlan?</ID>
+    <ID>CyclomaticComplexMethod:HearingModes.kt:HearingModes$fun withReport: HearingModes</ID>
+    <ID>CyclomaticComplexMethod:InformationPacket.kt:InformationPacket.Companion$fun parse: InformationPacket</ID>
+    <ID>CyclomaticComplexMethod:MotionSourceTiming.kt:MotionSourceTiming$@Synchronized fun motionPublished</ID>
+    <ID>CyclomaticComplexMethod:NearbyAirPods.kt:NearbyAirPods.InvitationProximity$fun observe: Boolean</ID>
+    <ID>CyclomaticComplexMethod:ProximityReport.kt:ProximityReport.Companion$fun decode: ProximityReport?</ID>
+    <ID>CyclomaticComplexMethod:RTBuddyManager.kt:RTBuddyManager$private fun feedLocked</ID>
+    <ID>CyclomaticComplexMethod:RTBuddyManager.kt:RTBuddyManager$private fun receiveRemote</ID>
+    <ID>CyclomaticComplexMethod:RTBuddyManager.kt:RTBuddyManager$private fun startHeartCampaign</ID>
+    <ID>CyclomaticComplexMethod:RTBuddyManager.kt:RTBuddyManager$private fun startMotion</ID>
+    <ID>CyclomaticComplexMethod:SensorDescriptorLayout.kt:SensorDescriptorLayout$fun parse: Kind?</ID>
+    <ID>CyclomaticComplexMethod:SensorFrames.kt:SensorFrames$fun feed: List&lt;ByteArray&gt;</ID>
+    <ID>CyclomaticComplexMethod:SensorReports.kt:SensorReports$private fun discover: Int</ID>
+    <ID>CyclomaticComplexMethod:SensorReports.kt:SensorReports$private fun motion: Motion?</ID>
+    <ID>CyclomaticComplexMethod:Transparency.kt:TransparencySettings$override fun equals: Boolean</ID>
+    <ID>CyclomaticComplexMethod:Transparency.kt:fun parseTransparencySettingsResponse: TransparencySettings?</ID>
+    <ID>DoubleMutabilityForCollection:HeadOrientation.kt:HeadTracking.Read$private var earlier: MutableList&lt;MotionSample&gt;? = null</ID>
+    <ID>EmptyElseBlock:SensorReports.kt:SensorReports$if (heart == service) return 0</ID>
+    <ID>EmptyElseBlock:SensorReports.kt:SensorReports$if (motion == service) return 0</ID>
+    <ID>ImplicitDefaultLocale:AACPManager.kt:AACPManager$"Unknown capability 0x%02X".format(capabilityId.toInt() and 0xFF)</ID>
+    <ID>ImplicitDefaultLocale:SmartRoutingPacket.kt:"%02X".format(it)</ID>
+    <ID>InstanceOfCheckForException:ATTManager.kt:ATTManager$error !is IOException</ID>
+    <ID>InstanceOfCheckForException:ATTManager.kt:ATTManager$error !is InterruptedException</ID>
+    <ID>InstanceOfCheckForException:ATTManager.kt:ATTManager$error is ATTFailure</ID>
+    <ID>InstanceOfCheckForException:ATTProtocol.kt:ATTBearer$error is java.io.IOException</ID>
+    <ID>LargeClass:AACPManager.kt:AACPManager</ID>
+    <ID>LargeClass:AppleDevice.kt:AppleDevice : Device</ID>
+    <ID>LongMethod:AACPManager.kt:AACPManager$@OptIn(ExperimentalStdlibApi::class) fun processPacket</ID>
+    <ID>LongMethod:AACPManager.kt:AACPManager$fun sendControlCommand: Boolean</ID>
+    <ID>LongMethod:AACPManager.kt:AACPManager$private fun connect: Boolean</ID>
+    <ID>LongMethod:AppleDevice.kt:AppleDevice$private suspend fun setHearingMode: Boolean</ID>
+    <ID>LongMethod:AppleDevice.kt:AppleDevice$suspend fun setAccommodations: AccommodationsResult</ID>
+    <ID>LongMethod:AppleDevice.kt:AppleDevice$suspend fun writeATTCharacteristic: Boolean</ID>
+    <ID>LongParameterList:Accommodations.kt:ReceivedAccommodations</ID>
+    <ID>LongParameterList:RTBuddyManager.kt:RTBuddyManager</ID>
+    <ID>LoopWithTooManyJumpStatements:AACPManager.kt:AACPManager$while</ID>
+    <ID>LoopWithTooManyJumpStatements:AppleDevice.kt:AppleDevice$while</ID>
+    <ID>LoopWithTooManyJumpStatements:RTBuddyManager.kt:RTBuddyManager$for</ID>
+    <ID>LoopWithTooManyJumpStatements:SensorFrames.kt:SensorFrames$while</ID>
+    <ID>MapGetWithNotNullAssertionOperator:AirPods.kt:AirPodsSpecs$specs[AirPodsModel.UNKNOWN]!!</ID>
+    <ID>MemberNameEqualsClassName:NearbyAirPods.kt:NearbyAirPods.Visits$private val visits = mutableMapOf&lt;Int, Visit&gt;()</ID>
+    <ID>NoNameShadowing:AACPManager.kt:AACPManager$packet</ID>
+    <ID>NoNameShadowing:AACPManager.kt:AACPManager${ it.capability == capability }</ID>
+    <ID>NoNameShadowing:AACPManager.kt:AACPManager${ it.copy(aacpPackets = it.aacpPackets + controlCommandPacket, hearingModes = it.hearingModes.withReport(packet), controlSession = connectionEpoch.get() + 1) }</ID>
+    <ID>NoNameShadowing:ATTProtocol.kt:{ it.uuid?.attBytes()?.contentEquals(page.copyOfRange(offset + 5, offset + each)) == true }</ID>
+    <ID>NoNameShadowing:InformationPacket.kt:InformationPacket.Companion${ Character.isISOControl(it) }</ID>
+    <ID>NoNameShadowing:MagicKeysResponsePacket.kt:MagicKeyResponsePacket.Companion${ it != 0.toByte() }</ID>
+    <ID>NoNameShadowing:MagicKeysResponsePacket.kt:MagicKeyResponsePacket.Companion${ it.value.toInt() == type }</ID>
+    <ID>NoNameShadowing:RTBuddyPacket.kt:RTBuddyPacket.Companion$data</ID>
+    <ID>PrintStackTrace:Device.kt:Device.&lt;no name provided&gt;$e</ID>
+    <ID>SuspendFunSwallowedCancellation:ATTManager.kt:ATTManager$catch (error: Exception) { if (error is kotlinx.coroutines.CancellationException) { retire(active); throw error } // ATT error codes are useful for authorization diagnostics; never log characteristic values. Log.d("ATTManager", if (error is ATTFailure) error.message else "ATT connection unavailable: ${error.javaClass.simpleName}") retire(active, retryable(error)) null }</ID>
+    <ID>SuspendFunSwallowedCancellation:AppleDevice.kt:AppleDevice$catch (cancelled: CancellationException) { if (current() &amp;&amp; att.canRetryRead()) { initial.attempted -= handle initial.retryAfter = System.nanoTime() / 1_000_000 + 5_000 } throw cancelled }</ID>
+    <ID>SwallowedException:AACPManager.kt:AACPManager$_: IllegalArgumentException</ID>
+    <ID>SwallowedException:AACPManager.kt:AACPManager$e: Exception</ID>
+    <ID>SwallowedException:CaseBatteryReport.kt:CaseBatteryReport.Companion$_: Exception</ID>
+    <ID>SwallowedException:CaseInfoReport.kt:_: Exception</ID>
+    <ID>SwallowedException:Opack.kt:Opack$_: IllegalArgumentException</ID>
+    <ID>SwallowedException:ProximityReport.kt:ProximityReport.Companion$_: Exception</ID>
+    <ID>SwallowedException:RTBuddyManager.kt:RTBuddyManager$_: Exception</ID>
+    <ID>SwallowedException:SensorDescriptorLayout.kt:SensorDescriptorLayout$_: IllegalArgumentException</ID>
+    <ID>SwallowedException:SensorDescriptorLayout.kt:SensorDescriptorLayout$_: IllegalStateException</ID>
+    <ID>ThrowsCount:AACPManager.kt:AACPManager$fun parseCapabilitiesResponse: Set&lt;CapabilityEntry&gt;</ID>
+    <ID>ThrowsCount:ATTManager.kt:ATTManager$private fun read: ByteArray?</ID>
+    <ID>ThrowsCount:ATTManager.kt:ATTManager$private suspend fun connect: Session?</ID>
+    <ID>ThrowsCount:ATTProtocol.kt:internal fun discoverATTSettings: Map&lt;ATTHandle, ATTCharacteristic&gt;</ID>
+    <ID>ThrowsCount:StemPressPacket.kt:StemPressPacket.Companion$fun parse: StemPressPacket</ID>
+    <ID>TooGenericExceptionCaught:AACPManager.kt:AACPManager$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:AACPManager.kt:AACPManager$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:ATTManager.kt:ATTManager$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:ATTProtocol.kt:ATTBearer$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:AppleDevice.kt:AppleDevice$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:AppleDevice.kt:AppleDevice$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:CaseBatteryReport.kt:CaseBatteryReport.Companion$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:CaseInfoReport.kt:_: Exception</ID>
+    <ID>TooGenericExceptionCaught:Device.kt:Device.&lt;no name provided&gt;$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:GestureDetector.kt:GestureDetector$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:LocalPreferenceEdits.kt:LocalPreferenceEdits$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:ProximityReport.kt:ProximityReport.Companion$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:RTBuddyManager.kt:RTBuddyManager$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:Utils.kt:e: Exception</ID>
+    <ID>TooManyFunctions:AACPManager.kt:AACPManager</ID>
+    <ID>TooManyFunctions:AppleDevice.kt:AppleDevice : Device</ID>
+    <ID>UnsafeCallOnNullableType:ATTManager.kt:ATTManager$active.bearer!!</ID>
+    <ID>UnsafeCallOnNullableType:AirPods.kt:AirPodsSpecs$specs[AirPodsModel.UNKNOWN]!!</ID>
+    <ID>UnsafeCallOnNullableType:AppleDevice.kt:AppleDevice$incoming.observedAt!!</ID>
+    <ID>UnsafeCallOnNullableType:AppleDevice.kt:AppleDevice$old.observedAt!!</ID>
+    <ID>UnsafeCallOnNullableType:HearingModes.kt:HearingModes$assistReport!!</ID>
+    <ID>UnsafeCallOnNullableType:HearingModes.kt:HearingModes$hearingReport!!</ID>
+    <ID>UnsafeCallOnNullableType:HearingModes.kt:HearingModes$pmeReport!!</ID>
+    <ID>UnusedImport:AACPManager.kt:import java.nio.ByteOrder</ID>
+    <ID>UnusedImport:AppleDevice.kt:import me.kavishdevar.librepods.core.bluetooth.aacp.publishForTransport</ID>
+    <ID>UnusedImport:Types.kt:import kotlinx.serialization.Serializable</ID>
+    <ID>UnusedImport:Types.kt:import me.kavishdevar.librepods.core.utils.redactMac</ID>
+    <ID>UnusedVariable:BatteryInfoPacket.kt:BatteryInfoPacket.Companion$i</ID>
+    <ID>UnusedVariable:ConnectedDevicesPacket.kt:ConnectedDevicesPacket.Companion$i</ID>
+    <ID>VariableNaming:AACPManager.kt:AACPManager$private val TAG = "AACPManager"</ID>
+    <ID>VariableNaming:Device.kt:Device$private val TAG: String get() = "LibrePodsDevice&lt;${macAddress.toRedactedString()}&gt;"</ID>
+  </CurrentIssues>
+</SmellBaseline>
