@@ -52,44 +52,68 @@ internal class EldCodecOverrideGuard {
         }.getOrDefault(false)
     }
 
+    /** Who is calling: the Binder caller, the package that owns it, and what the attribution claims. */
+    data class CallerIdentity(val callingUid: Int, val packageUid: Int, val system: Boolean, val packages: List<String>?,
+        val attributionUid: Int?, val attributionPackage: String?, val delegated: Boolean)
+
+    /** The arguments of one incoming setCodecConfigPreference Binder call. */
+    data class BinderCall(val callingUid: Int, val device: BluetoothDevice?, val codec: Any?,
+        val attribution: AttributionSource?)
+
     companion object {
         const val ACTOR = "com.google.android.apps.pixel.dcservice"
+        /** android.os.Process.FIRST_APPLICATION_UID; lower UIDs belong to the system. */
+        private const val FIRST_APPLICATION_UID = 10_000
+        /** BluetoothCodecConfig.SOURCE_CODEC_TYPE_AAC. */
+        private const val AAC_CODEC_TYPE = 1
+        private const val AAC_EXTENDED_CODEC_ID = 2L
+        /** BluetoothCodecConfig.CODEC_PRIORITY_HIGHEST, which the Pixel service uses to force AAC. */
+        private const val HIGHEST_CODEC_PRIORITY = 1_000_000
+        private const val MAXIMUM_FAILURE_KIND_LENGTH = 96
+        private const val MAXIMUM_FAILURE_MESSAGE_LENGTH = 160
+        private const val BROADCAST_ADDRESS_BYTE = 255
+
         fun failure(error: Throwable): String {
-            val kind = error.javaClass.name.take(96)
-            val message = error.message.orEmpty().take(160).map {
+            val kind = error.javaClass.name.take(MAXIMUM_FAILURE_KIND_LENGTH)
+            val message = error.message.orEmpty().take(MAXIMUM_FAILURE_MESSAGE_LENGTH).map {
                 if (Character.isISOControl(it) || Character.getType(it) == Character.FORMAT.toInt() ||
                     it == '\u2028' || it == '\u2029') ' ' else it
             }.joinToString("").trim()
             return if (message.isEmpty()) kind else "$kind: $message"
         }
-        fun forcedAac(codec: EldCodecIdentity.Fields) = codec.type == 1 &&
-            codec.extendedCodecId == 2L && codec.priority == 1_000_000
+        fun forcedAac(codec: EldCodecIdentity.Fields) = codec.type == AAC_CODEC_TYPE &&
+            codec.extendedCodecId == AAC_EXTENDED_CODEC_ID && codec.priority == HIGHEST_CODEC_PRIORITY
 
-        fun trustedCaller(callingUid: Int, packageUid: Int, system: Boolean, packages: List<String>?,
-            attributionUid: Int?, attributionPackage: String?, delegated: Boolean): Boolean =
-            callingUid >= 10_000 && callingUid == packageUid && system && packages == listOf(ACTOR) &&
-                attributionUid == callingUid && attributionPackage == ACTOR && !delegated
+        /** The caller must be the one system app that owns its UID, with an undelegated attribution naming itself. */
+        fun trustedCaller(caller: CallerIdentity): Boolean = with(caller) {
+            val ownsItsUid = callingUid >= FIRST_APPLICATION_UID && callingUid == packageUid && packages == listOf(ACTOR)
+            val attributionMatches = attributionUid == callingUid && attributionPackage == ACTOR && !delegated
+            ownsItsUid && system && attributionMatches
+        }
 
         fun peer(address: String?): List<Int>? = address?.takeIf {
             it.matches(Regex("[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}"))
         }?.split(':')?.map { it.toInt(16) }?.takeIf { bytes ->
-            bytes.any { it != 0 } && bytes.any { it != 255 }
+            bytes.any { it != 0 } && bytes.any { it != BROADCAST_ADDRESS_BYTE }
         }
 
         @SuppressLint("NewApi", "MissingPermission")
-        fun capture(context: Context?, callingUid: Int, device: BluetoothDevice?, codec: Any?,
-            attribution: AttributionSource?, objects: EldCodecObjects): Request? {
+        fun capture(context: Context?, call: BinderCall, objects: EldCodecObjects): Request? {
             return runCatching {
+                val attribution = call.attribution
+                val device = call.device
+                val codec = call.codec
                 if (context == null || attribution == null || device == null || codec == null) return null
                 val fields = objects.fields(codec)
-                if (!forcedAac(fields) || attribution.uid != callingUid || attribution.packageName != ACTOR ||
-                    attribution.next != null) return null
+                val attributionNamesCaller = attribution.uid == call.callingUid && attribution.packageName == ACTOR &&
+                    attribution.next == null
+                if (!forcedAac(fields) || !attributionNamesCaller) return null
                 val manager = context.packageManager
                 val app = manager.getApplicationInfo(ACTOR, 0)
-                if (!trustedCaller(callingUid, app.uid,
-                        app.flags and (ApplicationInfo.FLAG_SYSTEM or ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0,
-                        manager.getPackagesForUid(callingUid)?.toList(), attribution.uid, attribution.packageName,
-                        attribution.next != null)) return null
+                val system = app.flags and (ApplicationInfo.FLAG_SYSTEM or ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+                val caller = CallerIdentity(call.callingUid, app.uid, system, manager.getPackagesForUid(call.callingUid)?.toList(),
+                    attribution.uid, attribution.packageName, attribution.next != null)
+                if (!trustedCaller(caller)) return null
                 peer(device.address)?.let { Request(it, fields) }
             }.getOrNull()
         }

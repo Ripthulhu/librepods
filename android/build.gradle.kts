@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.room3) apply false
     alias(libs.plugins.android.library) apply false
     alias (libs.plugins.protobuf) apply false
+    alias(libs.plugins.detekt) apply false
 //    alias(libs.plugins.hilt) apply false
     id("versioning")
 }

@@ -57,7 +57,9 @@ fun AudioSettings(
     loudSoundReductionEnabled: Boolean = false,
     spatialAudioContent: (@Composable StyledListScope.() -> Unit)? = null,
 ) {
-    if (adaptiveVolumeCapability || conversationAwarenessCapability || loudSoundReductionCapability || gameModeVisible || spatialAudioContent != null) {
+    val anySettingShown = adaptiveVolumeCapability || conversationAwarenessCapability || loudSoundReductionCapability ||
+        gameModeVisible || spatialAudioContent != null
+    if (anySettingShown) {
         StyledList(title = stringResource(R.string.audio)) {
             spatialAudioContent?.invoke(this)
             if (gameModeVisible) {

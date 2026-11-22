@@ -24,7 +24,7 @@ internal class RootSpatialControl(private val context: Context) : AutoCloseable 
     @Volatile private var closed = false
     private val heartbeat = Executors.newSingleThreadScheduledExecutor { task ->
         Thread(task, "atmos-spatial-owner").apply { isDaemon = true }
-    }.apply { scheduleWithFixedDelay({ renew() }, 750, 750, TimeUnit.MILLISECONDS) }
+    }.apply { scheduleWithFixedDelay({ renew() }, LEASE_RENEW_MILLISECONDS, LEASE_RENEW_MILLISECONDS, TimeUnit.MILLISECONDS) }
 
     private fun route(address: String, owner: IPlaybackRecoveryOwner): Int {
         check(!closed && Process.myUid() == 0 && owner.asBinder().isBinderAlive && owner.isCurrent) { "owner_changed" }
@@ -74,26 +74,46 @@ internal class RootSpatialControl(private val context: Context) : AutoCloseable 
         if (snapshot()?.supported != true && backendAbsent())
             return SpatialBackendSnapshot.unavailable(SpatialBackendSnapshot.ABSENT)
         if (!SpatialNativeClient.load()) return SpatialBackendSnapshot.unavailable("unsupported")
-        val captured = synchronized(lock) {
+        val captured = select(normalized, owner, id, epoch, choiceBits(spatial, tracking))
+            ?: return SpatialBackendSnapshot.unavailable("owner_changed")
+        val serial = runCatching { submit(captured) }.getOrElse { retireSelection(captured); return SpatialBackendSnapshot.unavailable("unavailable") }
+        return awaitApplied(captured, owner, serial)
+            ?.bundle()?.apply { putBoolean("applied", true); putBoolean("route_verified", true); putLong("choice_epoch", epoch) }
+            ?: SpatialBackendSnapshot.unavailable("request_failed")
+    }
+
+    private fun choiceBits(spatial: Boolean, tracking: Boolean): Int =
+        (if (spatial) SpatialBackendSnapshot.Choice.SPATIAL.toInt() else 0) or
+            (if (tracking) SpatialBackendSnapshot.Choice.TRACKING.toInt() else 0)
+
+    /** Records the new selection, keeping the route epoch of an unchanged route; null when a newer epoch already owns it. */
+    private fun select(address: String, owner: IPlaybackRecoveryOwner, routeId: Int, epoch: Long, choices: Int): Selection? =
+        synchronized(lock) {
             val previous = selected
-            if (previous != null && previous.address == normalized && epoch < previous.choiceEpoch)
-                return SpatialBackendSnapshot.unavailable("owner_changed")
-            Selection(normalized, owner, id,
-                previous?.takeIf { it.address == normalized && it.routeId == id && it.owner.asBinder() == owner.asBinder() }?.routeEpoch
-                    ?: SystemClock.elapsedRealtimeNanos(), epoch, (if (spatial) 1 else 0) or (if (tracking) 2 else 0))
+            if (previous != null && previous.address == address && epoch < previous.choiceEpoch) return null
+            val sameRoute = previous?.takeIf { it.address == address && it.routeId == routeId && it.owner.asBinder() == owner.asBinder() }
+            Selection(address, owner, routeId, sameRoute?.routeEpoch ?: SystemClock.elapsedRealtimeNanos(), epoch, choices)
                 .also { selected = it }
         }
-        val serial = runCatching { submit(captured) }.getOrElse { retireSelection(captured); return SpatialBackendSnapshot.unavailable("unavailable") }
-        val deadline = SystemClock.elapsedRealtime() + 2_000
+
+    /** Polls the native status until it reports this exact request applied, or the owner or deadline ends the wait. */
+    private fun awaitApplied(captured: Selection, owner: IPlaybackRecoveryOwner, serial: Long): SpatialBackendSnapshot? {
+        val deadline = SystemClock.elapsedRealtime() + APPLY_TIMEOUT_MILLISECONDS
         while (SystemClock.elapsedRealtime() < deadline) {
-            if (selected !== captured || !runCatching { owner.isCurrent }.getOrDefault(false)) break
+            if (selected !== captured || !runCatching { owner.isCurrent }.getOrDefault(false)) return null
             val result = snapshot()
-            if (result != null && result.completed >= serial && result.known && result.choiceEpoch == epoch &&
-                result.routeId == captured.routeId && result.routeEpoch == captured.routeEpoch && result.choices == captured.choices)
-                return result.bundle().apply { putBoolean("applied", true); putBoolean("route_verified", true); putLong("choice_epoch", epoch) }
-            Thread.sleep(20)
+            if (result != null && reportsApplied(result, captured, serial)) return result
+            Thread.sleep(APPLY_POLL_MILLISECONDS)
         }
-        return SpatialBackendSnapshot.unavailable("request_failed")
+        return null
+    }
+
+    /** The native side finished this request and now holds exactly the captured choice on the captured route. */
+    private fun reportsApplied(result: SpatialBackendSnapshot, captured: Selection, serial: Long): Boolean {
+        if (result.completed < serial || !result.known) return false
+        val sameChoice = result.choiceEpoch == captured.choiceEpoch && result.choices == captured.choices
+        val sameRoute = result.routeId == captured.routeId && result.routeEpoch == captured.routeEpoch
+        return sameChoice && sameRoute
     }
     private fun submit(value: Selection): Long {
         check(selected === value && route(value.address, value.owner) == value.routeId && selected === value)
@@ -108,9 +128,9 @@ internal class RootSpatialControl(private val context: Context) : AutoCloseable 
     }
     fun authorizes(address: String, epoch: Long): Boolean {
         val value = selected ?: return false
-        if (value.address != address || value.choiceEpoch != epoch || value.choices != 3) return false
+        if (value.address != address || value.choiceEpoch != epoch || value.choices != SPATIAL_WITH_TRACKING) return false
         return runCatching { route(address, value.owner) == value.routeId && snapshot()?.let {
-            it.known && it.choiceEpoch == epoch && it.choices == 3 && it.routeId == value.routeId && it.routeEpoch == value.routeEpoch
+            it.known && it.choiceEpoch == epoch && it.choices == SPATIAL_WITH_TRACKING && it.routeId == value.routeId && it.routeEpoch == value.routeEpoch
         } == true }.getOrDefault(false)
     }
     fun retire(owner: IPlaybackRecoveryOwner) {
@@ -124,5 +144,12 @@ internal class RootSpatialControl(private val context: Context) : AutoCloseable 
     override fun close() {
         closed = true; heartbeat.shutdownNow()
         selected?.let { retire(it.owner) }
+    }
+
+    private companion object {
+        const val LEASE_RENEW_MILLISECONDS = 750L
+        const val APPLY_TIMEOUT_MILLISECONDS = 2_000L
+        const val APPLY_POLL_MILLISECONDS = 20L
+        val SPATIAL_WITH_TRACKING = (SpatialBackendSnapshot.Choice.SPATIAL or SpatialBackendSnapshot.Choice.TRACKING).toInt()
     }
 }

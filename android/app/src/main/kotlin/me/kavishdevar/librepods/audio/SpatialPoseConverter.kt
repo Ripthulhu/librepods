@@ -24,9 +24,11 @@ internal class SpatialPoseProfile private constructor(val headFromRaw: List<List
         fun fromBasis(rows: List<List<Double>>): SpatialPoseProfile? {
             if (rows.size != 3 || rows.any { it.size != 3 || it.any { n -> !n.isFinite() } }) return null
             val axes = rows.map { V.of(it) }
-            if (axes.any { abs(it.norm() - 1) > 1e-5 } ||
-                abs(axes[0].dot(axes[1])) > 1e-5 || abs(axes[0].dot(axes[2])) > 1e-5 ||
-                abs(axes[1].dot(axes[2])) > 1e-5 || abs(axes[0].cross(axes[1]).dot(axes[2]) - 1) > 1e-5) return null
+            fun deviates(value: Double) = abs(value) > 1e-5
+            val notUnitLength = axes.any { deviates(it.norm() - 1) }
+            val notOrthogonal = deviates(axes[0].dot(axes[1])) || deviates(axes[0].dot(axes[2])) || deviates(axes[1].dot(axes[2]))
+            val notRightHanded = deviates(axes[0].cross(axes[1]).dot(axes[2]) - 1)
+            if (notUnitLength || notOrthogonal || notRightHanded) return null
             return SpatialPoseProfile(rows.map { it.toList() })
         }
 
@@ -42,12 +44,7 @@ internal class SpatialPoseProfile private constructor(val headFromRaw: List<List
             val ready = neutral.dropWhile { it.attitudeQ15.all { n -> n == 0 } }
             if (ready.size < 5 || returned.size < 5 || up.size < 3) return failed(SpatialCalibrationFailure.INSUFFICIENT_SAMPLES)
             val all = ready + up + returned
-            for ((a, b) in all.zipWithNext()) {
-                val before = a.timestampNs; val after = b.timestampNs
-                if (before == null || after == null || before <= 0 || after <= before)
-                    return failed(SpatialCalibrationFailure.SENSOR_TIME_CHANGED)
-                if (!counterFollows(a.counter, b.counter, before, after)) return failed(SpatialCalibrationFailure.SENSOR_COUNTER_CHANGED)
-            }
+            sequenceFailure(all)?.let { return failed(it) }
             val quaternions = all.map { attitude(it) ?: return failed(SpatialCalibrationFailure.UNSUPPORTED_ATTITUDE) }
             val neutralTail = settledTail(ready); val returnTail = settledTail(returned)
             if (neutralTail.size < 5 || returnTail.size < 5) return failed(SpatialCalibrationFailure.INSUFFICIENT_SAMPLES)
@@ -55,24 +52,50 @@ internal class SpatialPoseProfile private constructor(val headFromRaw: List<List
                 ?: return failed(SpatialCalibrationFailure.NEUTRAL_UNSTEADY)
             val finish = meanHold(returnTail.map { checkNotNull(attitude(it)) })
                 ?: return failed(SpatialCalibrationFailure.RETURN_UNSTEADY)
-            if ((base.inverse() * finish).rotationVector().norm() > radians(5.0)) return failed(SpatialCalibrationFailure.RETURN_NOT_NEUTRAL)
-            if (!levelGravity(neutralTail, base)) return failed(SpatialCalibrationFailure.NEUTRAL_GRAVITY_INVALID)
-            if (!levelGravity(returnTail, finish)) return failed(SpatialCalibrationFailure.RETURN_GRAVITY_INVALID)
+            holdFailure(base, finish, neutralTail, returnTail)?.let { return failed(it) }
+            return profileFromLookUp(quaternions.drop(ready.size).take(up.size), base, returned.last())
+        }
+
+        /** Builds the head axes from the look-up rotations: x from the pitch axis, z as world up seen from neutral. */
+        private fun profileFromLookUp(lookUp: List<Q>, base: Q, last: MotionReport): SpatialCalibrationResult {
+            fun failed(reason: SpatialCalibrationFailure) = SpatialCalibrationResult(null, reason)
             val z = base.inverse().rotate(V(0.0, 0.0, 1.0))
-            val axes = quaternions.drop(ready.size).take(up.size).mapNotNull { q ->
-                val delta = (base.inverse() * q).rotationVector()
-                val angle = delta.norm()
-                if (angle < radians(8.0)) return@mapNotNull null
-                val horizontal = delta - z * delta.dot(z)
-                if (horizontal.norm() / angle < cos(radians(10.0))) return failed(SpatialCalibrationFailure.UP_AXIS_NOT_HORIZONTAL)
-                horizontal.unit()
-            }
+            val axes = lookUpAxes(lookUp, base, z) ?: return failed(SpatialCalibrationFailure.UP_AXIS_NOT_HORIZONTAL)
             if (axes.size < 3) return failed(SpatialCalibrationFailure.UP_TOO_SMALL)
             val x = axes.reduce(V::plus).unit()
             if (axes.any { angleBetween(it, x) > radians(5.0) }) return failed(SpatialCalibrationFailure.UP_AXIS_INCONSISTENT)
             val y = z.cross(x).unit()
             val basis = fromBasis(listOf(x.list(), y.list(), z.list())) ?: return failed(SpatialCalibrationFailure.INVALID_BASIS)
-            return SpatialCalibrationResult(SpatialPoseProfile(basis.headFromRaw, returned.last().timestampNs, returned.last().counter), null)
+            return SpatialCalibrationResult(SpatialPoseProfile(basis.headFromRaw, last.timestampNs, last.counter), null)
+        }
+
+        /** Sensor time must rise and the counter advance between consecutive reports. */
+        private fun sequenceFailure(reports: List<MotionReport>): SpatialCalibrationFailure? {
+            for ((a, b) in reports.zipWithNext()) {
+                if (!timeFollows(a.timestampNs, b.timestampNs)) return SpatialCalibrationFailure.SENSOR_TIME_CHANGED
+                if (!counterFollows(a.counter, b.counter, a.timestampNs, b.timestampNs)) return SpatialCalibrationFailure.SENSOR_COUNTER_CHANGED
+            }
+            return null
+        }
+
+        private fun timeFollows(before: Long?, after: Long?) = before != null && after != null && before > 0 && after > before
+
+        /** The return hold must match the neutral hold, and both must see level gravity. */
+        private fun holdFailure(base: Q, finish: Q, neutralTail: List<MotionReport>, returnTail: List<MotionReport>): SpatialCalibrationFailure? = when {
+            (base.inverse() * finish).rotationVector().norm() > radians(5.0) -> SpatialCalibrationFailure.RETURN_NOT_NEUTRAL
+            !levelGravity(neutralTail, base) -> SpatialCalibrationFailure.NEUTRAL_GRAVITY_INVALID
+            !levelGravity(returnTail, finish) -> SpatialCalibrationFailure.RETURN_GRAVITY_INVALID
+            else -> null
+        }
+
+        /** Horizontal rotation axes of the look-up samples that moved at least 8 degrees, or null when one tilts sideways. */
+        private fun lookUpAxes(rotations: List<Q>, base: Q, z: V): List<V>? = rotations.mapNotNull { q ->
+            val delta = (base.inverse() * q).rotationVector()
+            val angle = delta.norm()
+            if (angle < radians(8.0)) return@mapNotNull null
+            val horizontal = delta - z * delta.dot(z)
+            if (horizontal.norm() / angle < cos(radians(10.0))) return null
+            horizontal.unit()
         }
 
         private fun meanHold(values: List<Q>): Q? {
@@ -142,17 +165,23 @@ internal class SpatialPoseConverter(private val profile: SpatialPoseProfile, pri
         if (time == null || time <= 0) return retire("sensor_time_unavailable")
         if (raw == null) return retire("unsupported_attitude")
         val head = (raw * rawFromHead).unit()
-        val old = previous
-        if (old == null) {
-            profile.referenceTimestampNs?.let { reference ->
-                if (time == reference && report.counter == profile.referenceCounter) return null
-                if (time <= reference) return retire("sensor_time_changed")
-                if (!counterFollows(profile.referenceCounter, report.counter, reference, time)) return retire("sensor_counter_changed")
-            }
-            initialHeadInverse = if (fenceStartupZeros && attitudeWasZero) null else head.inverse()
-            previous = head; previousTime = time; previousCounter = report.counter
-            return null
+        val old = previous ?: return startReference(report, time, head, attitudeWasZero)
+        return advance(report, time, head, old, attitudeWasZero)
+    }
+
+    /** The first usable report after calibration becomes the reference; it yields no pose. */
+    private fun startReference(report: MotionReport, time: Long, head: Q, attitudeWasZero: Boolean): SpatialPose? {
+        profile.referenceTimestampNs?.let { reference ->
+            if (time == reference && report.counter == profile.referenceCounter) return null
+            if (time <= reference) return retire("sensor_time_changed")
+            if (!counterFollows(profile.referenceCounter, report.counter, reference, time)) return retire("sensor_counter_changed")
         }
+        initialHeadInverse = if (fenceStartupZeros && attitudeWasZero) null else head.inverse()
+        previous = head; previousTime = time; previousCounter = report.counter
+        return null
+    }
+
+    private fun advance(report: MotionReport, time: Long, head: Q, old: Q, attitudeWasZero: Boolean): SpatialPose? {
         val dt = time - previousTime
         if (dt <= 0) return retire("sensor_time_changed")
         if (!counterFollows(previousCounter, report.counter, previousTime, time)) return retire("sensor_counter_changed")

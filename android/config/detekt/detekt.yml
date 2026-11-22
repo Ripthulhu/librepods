@@ -1,0 +1,174 @@
+# detekt configuration for :app and :core.
+#
+# Builds on detekt's default configuration (buildUponDefaultConfig = true), so only the
+# differences are listed here. The focus is on rules that catch defects or make code harder
+# to change: swallowed and too-generic exceptions, `!!`, unused code, complexity and
+# potential bugs. Pure formatting and style rules are switched off; the project follows
+# `kotlin.code.style=official` and has no formatter.
+#
+# Existing findings live in each module's detekt-baseline-debug.xml. Only new findings fail.
+
+config:
+  validation: true
+
+console-reports:
+  active: true
+  exclude:
+    - 'ProjectStatisticsReport'
+    - 'ComplexityReport'
+    - 'NotificationReport'
+    - 'FileBasedIssuesReport'
+
+complexity:
+  active: true
+  # Compose UI functions are long, take many parameters and branch on UI state by design.
+  CyclomaticComplexMethod:
+    active: true
+    ignoreSimpleWhenEntries: true
+    ignoreAnnotated: ['Composable']
+  LongMethod:
+    active: true
+    ignoreAnnotated: ['Composable', 'Preview']
+  LongParameterList:
+    active: true
+    ignoreDefaultParameters: true
+    ignoreAnnotated: ['Composable']
+  NestedBlockDepth:
+    active: true
+    ignoreAnnotated: ['Composable']
+  TooManyFunctions:
+    active: true
+    allowedFunctionsPerFile: 20
+    allowedFunctionsPerClass: 20
+    allowedFunctionsPerObject: 20
+    allowedFunctionsPerInterface: 20
+    ignoreOverridden: true
+    ignorePrivate: true
+
+coroutines:
+  active: true
+  # Architectural preference (inject dispatchers for testability), not a defect.
+  InjectDispatcher:
+    active: false
+  # Catching CancellationException inside suspend code breaks structured concurrency.
+  SuspendFunSwallowedCancellation:
+    active: true
+  GlobalCoroutineUsage:
+    active: true
+
+empty-blocks:
+  active: true
+  # Android callbacks often have intentionally empty overrides.
+  EmptyFunctionBlock:
+    active: true
+    ignoreOverridden: true
+
+exceptions:
+  active: true
+  # The default name allowlist also accepts `_`, which would exempt `catch (_: Exception)`,
+  # the most common way this codebase swallows exceptions. Only an explicit `ignored`/`expected`
+  # name opts out.
+  SwallowedException:
+    active: true
+    allowedExceptionNameRegex: '(ignore|expected).*'
+  TooGenericExceptionCaught:
+    active: true
+    allowedExceptionNameRegex: '(ignore|expected).*'
+
+performance:
+  active: true
+  # Vararg forwarding copies are negligible here and the rule is mostly noise.
+  SpreadOperator:
+    active: false
+
+naming:
+  active: true
+  # Composables are PascalCase by convention.
+  FunctionNaming:
+    active: true
+    ignoreAnnotated: ['Composable']
+  # Top-level Compose values (colours, shapes, CompositionLocals) are PascalCase.
+  TopLevelPropertyNaming:
+    active: true
+    constantPattern: '[A-Z][_A-Za-z0-9]*'
+    propertyPattern: '[A-Za-z][_A-Za-z0-9]*'
+  # Files holding several related declarations are common and intentional.
+  MatchingDeclarationName:
+    active: false
+
+style:
+  active: true
+  # Kept: unused code, mutability, throw/jump complexity and equality bugs (see below).
+  # Off: rules that only enforce formatting or a code style the project does not use.
+  AbstractClassCanBeConcreteClass:
+    active: false
+  AbstractClassCanBeInterface:
+    active: false
+  DestructuringDeclarationWithTooManyEntries:
+    active: false
+  ExplicitItLambdaMultipleParameters:
+    active: false
+  ExplicitItLambdaParameter:
+    active: false
+  ForbiddenComment:
+    active: false
+  ForbiddenVoid:
+    active: false
+  FunctionOnlyReturningConstant:
+    active: false
+  # Protocol tables and Compose dimensions are full of literal numbers; noise, not risk.
+  MagicNumber:
+    active: false
+  MaxLineLength:
+    active: false
+  MayBeConstant:
+    active: false
+  ModifierOrder:
+    active: false
+  NestedClassesVisibility:
+    active: false
+  NewLineAtEndOfFile:
+    active: false
+  ObjectLiteralToLambda:
+    active: false
+  OptionalAbstractKeyword:
+    active: false
+  ProtectedMemberInFinalClass:
+    active: false
+  RedundantHigherOrderMapUsage:
+    active: false
+  ReturnCount:
+    active: false
+  SafeCast:
+    active: false
+  SerialVersionUIDInSerializableClass:
+    active: false
+  UnnecessaryApply:
+    active: false
+  UnnecessaryFilter:
+    active: false
+  UnnecessaryInheritance:
+    active: false
+  UseAnyOrNoneInsteadOfFind:
+    active: false
+  UseArrayLiteralsInAnnotations:
+    active: false
+  UseCheckNotNull:
+    active: false
+  UseCheckOrError:
+    active: false
+  UseIsNullOrEmpty:
+    active: false
+  UseOrEmpty:
+    active: false
+  UseRequire:
+    active: false
+  UseRequireNotNull:
+    active: false
+  # Unused code (off in the defaults).
+  UnusedImport:
+    active: true
+  UselessCallOnNotNull:
+    active: false
+  WildcardImport:
+    active: false

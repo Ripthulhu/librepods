@@ -11,8 +11,6 @@ import android.media.AudioManager
 import java.io.FileDescriptor
 import java.io.PrintWriter
 import java.io.StringWriter
-import kotlin.coroutines.Continuation
-import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import me.kavishdevar.librepods.companion.CompanionMediaSample
@@ -48,7 +46,7 @@ class CompanionMediaDiagnosticsTest {
 
     @Before fun setUp() {
         service = Robolectric.buildService(LibrePodsService::class.java).get()
-        field("companionHoldReady").set(service, true)
+        holdsField("ready").set(companionHolds(), true)
         field("companionBridge\$delegate").set(service, lazyOf(bridge))
         `when`(bridge.hasRootPrivileges).thenReturn(true)
         `when`(bridge.state).thenReturn(MutableStateFlow(me.kavishdevar.librepods.shizuku.BridgeState(connected = true)))
@@ -72,7 +70,7 @@ class CompanionMediaDiagnosticsTest {
     }
 
     @Test fun admissionFailureShowsActualOutputAndTheExactGateWithoutCallingTheHelper() = runBlocking<Unit> {
-        field("companionHoldReady").set(service, false)
+        holdsField("ready").set(companionHolds(), false)
         assertFalse(inspect().known)
         val report = dump()
         assertTrue(report.contains("stage=ADMISSION reason=HOLD_UNAVAILABLE"))
@@ -111,10 +109,7 @@ class CompanionMediaDiagnosticsTest {
         assertTrue(dump().contains("device_present=false"))
     }
 
-    private suspend fun inspect(): CompanionMediaSample = suspendCoroutineUninterceptedOrReturn { continuation ->
-        LibrePodsService::class.java.getDeclaredMethod("companionMedia", String::class.java, Continuation::class.java)
-            .apply { isAccessible = true }.invoke(service, address.value, continuation)
-    }
+    private suspend fun inspect(): CompanionMediaSample = handoffHost().companionMedia(address.value)
 
     private fun dump(): String = StringWriter().also {
         LibrePodsService::class.java.getDeclaredMethod("dump", FileDescriptor::class.java, PrintWriter::class.java,
@@ -122,5 +117,8 @@ class CompanionMediaDiagnosticsTest {
             .invoke(service, FileDescriptor(), PrintWriter(it), arrayOf("--companion-media"))
     }.toString()
 
+    private fun companionHolds() = field("companionHolds").get(service) as CompanionHolds
+    private fun holdsField(name: String) = CompanionHolds::class.java.getDeclaredField(name).apply { isAccessible = true }
+    private fun handoffHost() = field("handoffHost").get(service) as CompanionHandoffHost
     private fun field(name: String) = LibrePodsService::class.java.getDeclaredField(name).apply { isAccessible = true }
 }

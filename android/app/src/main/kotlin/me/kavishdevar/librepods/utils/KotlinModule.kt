@@ -489,9 +489,10 @@ class KotlinModule: XposedModule() {
             val incoming = EldCodecPreferenceBinderPlan.discover(hostLoader, sdk)
             hook(incoming.preference).intercept { chain ->
                 val callingUid = android.os.Binder.getCallingUid()
-                val captured = EldCodecOverrideGuard.capture(gameBridgeContext, callingUid,
+                val call = EldCodecOverrideGuard.BinderCall(callingUid,
                     chain.args.getOrNull(0) as? android.bluetooth.BluetoothDevice, chain.args.getOrNull(1),
-                    chain.args.getOrNull(2) as? android.content.AttributionSource, plan.objects)
+                    chain.args.getOrNull(2) as? android.content.AttributionSource)
+                val captured = EldCodecOverrideGuard.capture(gameBridgeContext, call, plan.objects)
                 if (captured != null && automaticOverrideCaptured.compareAndSet(false, true))
                     log(Log.INFO, TAG, "Scoped Pixel codec request captured")
                 // Always retain platform permission/attribution checks; suppress only at the native boundary.

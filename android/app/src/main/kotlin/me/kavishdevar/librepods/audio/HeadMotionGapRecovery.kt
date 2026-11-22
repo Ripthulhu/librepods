@@ -12,8 +12,8 @@ internal class HeadMotionGapRecovery {
 
     @Synchronized fun submitted(arrivalNs: Long, nowNs: Long) {
         if (latched) return
-        if (arrivalNs <= 0 || nowNs <= 0 || arrivalNs > nowNs || nowNs - arrivalNs > FRESH_NS ||
-            (lastArrival != 0L && (arrivalNs <= lastArrival || nowNs <= lastSubmit))) {
+        if (isArrivalInvalid(arrivalNs, nowNs) || isArrivalStale(arrivalNs, nowNs) ||
+            isArrivalOutOfOrder(arrivalNs, nowNs)) {
             resetHealthy(); return
         }
         if (healthySince == 0L || arrivalNs - lastArrival >= FRESH_NS || nowNs - lastSubmit >= FRESH_NS)
@@ -32,6 +32,15 @@ internal class HeadMotionGapRecovery {
     @Synchronized fun withheld() { resetHealthy() }
 
     private fun resetHealthy() { healthySince = 0; lastArrival = 0; lastSubmit = 0 }
+
+    /** Missing clock or a receipt timestamp from the future. */
+    private fun isArrivalInvalid(arrivalNs: Long, nowNs: Long) = arrivalNs <= 0 || nowNs <= 0 || arrivalNs > nowNs
+
+    private fun isArrivalStale(arrivalNs: Long, nowNs: Long) = nowNs - arrivalNs > FRESH_NS
+
+    /** Only meaningful once a previous submission has been recorded. */
+    private fun isArrivalOutOfOrder(arrivalNs: Long, nowNs: Long) =
+        lastArrival != 0L && (arrivalNs <= lastArrival || nowNs <= lastSubmit)
 
     /** Automatic reacquisition retains the same budget; explicit source/choice changes replace it. */
     class Scopes {

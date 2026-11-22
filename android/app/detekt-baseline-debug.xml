@@ -1,0 +1,770 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:AirPodsQSService.kt:AirPodsQSService$!destroyed &amp;&amp; generation == pickerGeneration &amp;&amp; !isLocked &amp;&amp; (dongle?.isCurrent(currentSource.dongleControls) == true || device != null &amp;&amp; !currentSource.dongleControls.state.value.usesDongleListeningControls &amp;&amp; devices.value[device.macAddress] === device &amp;&amp; canControl(device))</ID>
+    <ID>ComplexCondition:BluetoothVolumeSync.kt:BluetoothVolumeSync$(currentBehavior != behavior &amp;&amp; !(allowAbsolute &amp;&amp; currentBehavior == 3)) || current.maximum != initial.maximum</ID>
+    <ID>ComplexCondition:BluetoothVolumeSync.kt:BluetoothVolumeSync$value.maximum &lt;= 0 || value.volume !in 0..value.maximum || route?.role != 2 || route.type != 8 || !route.address.equals(selected, true)</ID>
+    <ID>ComplexCondition:CalibratedHeadMotion.kt:metadata.model != AirPodsModel.AIRPODS_PRO_3 || role.firstOrNull() !in listOf(1, 2) || metadata.modelNumber.isBlank() || metadata.version1.isBlank()</ID>
+    <ID>ComplexCondition:CallPcmConsumer.kt:CallPcmConsumer$closed || stopped || muted || epoch == 0L</ID>
+    <ID>ComplexCondition:CommunicationAudioController.kt:CommunicationAudioController$!supported || !deviceCurrent() || !audio.isConnected || !hasPermissions()</ID>
+    <ID>ComplexCondition:CommunicationAudioController.kt:CommunicationAudioController.Companion$uid &lt;= 0 || packageName.isBlank() || (expectedKind == 1 &amp;&amp; session != 0) || (expectedKind == 2 &amp;&amp; session &lt;= 0) || expectedKind !in 1..2</ID>
+    <ID>ComplexCondition:CompanionHandoffController.kt:CompanionHandoffController$!closed &amp;&amp; !unlinking &amp;&amp; generation == epoch &amp;&amp; link == null &amp;&amp; saved != null</ID>
+    <ID>ComplexCondition:CompanionHandoffController.kt:CompanionHandoffController$!lease.rejectedBeforePrepare || !callCurrent(lease) || !incomingCurrent(lease.incoming) || lease.acquireStarted || lease.hadHfp || lease.hadSco || lease.flags and 8 == 0 || lease.incoming.origins.size != 1</ID>
+    <ID>ComplexCondition:CompanionHandoffController.kt:CompanionHandoffController$call != null || token in event.origins || event.origins.size &gt;= 2 || event.origins.isNotEmpty() &amp;&amp; !event.retryReady</ID>
+    <ID>ComplexCondition:CompanionHandoffController.kt:CompanionHandoffController$context.purpose !in setOf("manual", "media") &amp;&amp; (active.caps and 2 == 0 || lease == null || !callCurrent(lease) || context.copy(purpose = "call_takeover") != lease.context || context.purpose == "call_takeover" &amp;&amp; (lease.ended || lease.checking || lease.state !in setOf("ringing", "active")) || context.purpose == "call_return" &amp;&amp; (!lease.ended || lease.state != "idle" || !callReturnAllowed(active.link.device)))</ID>
+    <ID>ComplexCondition:CompanionHandoffController.kt:CompanionHandoffController$id != CompanionProtocol.HANDSHAKE_TX &amp;&amp; frame.getString("type") != "prepare" &amp;&amp; active.transaction?.id != id &amp;&amp; pendingSwitch?.id != id &amp;&amp; id !in active.transactions</ID>
+    <ID>ComplexCondition:CompanionHandoffController.kt:CompanionHandoffController$lease.hadHfp &amp;&amp; flags and 3 != 3 || lease.state == "active" &amp;&amp; lease.hadSco &amp;&amp; flags and 4 == 0</ID>
+    <ID>ComplexCondition:CompanionHandoffController.kt:CompanionHandoffController$tx == null || tx.id != id || tx.stage != "ready" || (phase == "release") != (tx.target == "pc")</ID>
+    <ID>ComplexCondition:CompanionHandoffController.kt:CompanionHandoffController$tx.target == "pc" &amp;&amp; tx.sourceGeneration == null &amp;&amp; value.sample.known &amp;&amp; (!value.sample.playing || !value.sample.connected)</ID>
+    <ID>ComplexCondition:CompanionHandoffHost.kt:CompanionHandoffHost$sameEnd() &amp;&amp; allCompanionCallsIdle() &amp;&amp; operations.isEmpty() &amp;&amp; receipt and NativeCallConnection.SCO_IDLE != 0</ID>
+    <ID>ComplexCondition:CompanionHandoffHost.kt:CompanionHandoffHost$suspendedGame &amp;&amp; gameController(device.macAddress) === game &amp;&amp; !microphoneActive() &amp;&amp; !microphoneStarting(device.macAddress)</ID>
+    <ID>ComplexCondition:CompanionMedia.kt:CompanionMedia$!next.known || !next.playing || !next.available || old?.player != next.player || pendingStart?.let { now &lt; it.second || now - it.second &gt; 2000 } == true</ID>
+    <ID>ComplexCondition:CompanionMedia.kt:CompanionMedia$old == null || old.known != next.known || old.playing != next.playing || old.player != next.player</ID>
+    <ID>ComplexCondition:CompanionPreferenceAdapter.kt:CompanionPreferenceAdapter$key == "desired_noise_modes_cycle" &amp;&amp; payload.getString("value") != "unset" &amp;&amp; payload.getString("value").toInt(16) and 1 != 0 &amp;&amp; pod.state.value.effectiveAllowOff(pod.settings.value, pod.metadata.value.modelNumber) != true</ID>
+    <ID>ComplexCondition:CompanionPreferenceAdapter.kt:CompanionPreferenceAdapter$key == "desired_noise_modes_cycle" &amp;&amp; payload.getString("value") != "unset" &amp;&amp; payload.getString("value").toInt(16) and 8 != 0 &amp;&amp; BaseCapability.ADAPTIVE_AUDIO !in AirPodsSpecs.getSpec(pod.metadata.value.model).baseCapabilities</ID>
+    <ID>ComplexCondition:ConversationVolume.kt:ConversationVolume$captureActive || stage !in 1..3 || (stage != 1 &amp;&amp; (!owns(owner) || !speaking))</ID>
+    <ID>ComplexCondition:DongleController.kt:DongleController$!value.usb || !value.connected || !value.usbAudioAvailable || !volumeAuthority || status.microphoneActive || callActive</ID>
+    <ID>ComplexCondition:DongleController.kt:DongleController$mutableState.value.usb &amp;&amp; volumeAuthority &amp;&amp; (controlsVisible || volumeRequested())</ID>
+    <ID>ComplexCondition:DongleHearingRecords.kt:DongleHearingRecords$base != null &amp;&amp; !request.pending &amp;&amp; report != null &amp;&amp; report.receptionRevision &gt; request.baselineRevision</ID>
+    <ID>ComplexCondition:DongleHidIdentity.kt:DongleHidIdentity$id.size != 3 || id[0].toIntOrNull(16) != 3 || id[1].toIntOrNull(16) != 0xcafe || id[2].toIntOrNull(16) != target.product || fields["HID_UNIQ"] != target.serial</ID>
+    <ID>ComplexCondition:DongleHidIdentity.kt:DongleHidIdentity$intf || read(path.resolve("bInterfaceNumber")).toIntOrNull(16) != target.interfaceId || read(path.resolve("bInterfaceClass")).toIntOrNull(16) != 3 || read(path.resolve("bInterfaceSubClass")).toIntOrNull(16) != 0 || read(path.resolve("bInterfaceProtocol")).toIntOrNull(16) != 0</ID>
+    <ID>ComplexCondition:DongleListeningTarget.kt:DongleListeningTarget.Companion$!state.selected || !state.canWriteControl(ControlCommandIdentifier.LISTENING_MODE) || BaseCapability.LISTENING_MODE !in AirPodsSpecs.getSpec(metadata.model).baseCapabilities || mode == null || mode !in 1L..4L || status.address.size != 6 || status.address.any { it !in 0..255 } || status.address.all { it == 0 }</ID>
+    <ID>ComplexCondition:DongleLiveSettings.kt:!connected || status?.controlsReady != true || status.microphoneActive || status.capabilities and settingsCapabilities != settingsCapabilities || index &lt; 0 || info.model == AirPodsModel.UNKNOWN || info.model != AirPodsModel.fromModelNumber(info.modelNumber) || controlMask(info.model) and (1 shl index) == 0</ID>
+    <ID>ComplexCondition:DongleProtocol.kt:DongleProtocol$bytes.size != EAR_STATE_PACKET_SIZE || bytes.take(EAR_STATE_PREFIX.size) != EAR_STATE_PREFIX || bytes[FIRST_EAR_OFFSET].toInt() !in knownStates || bytes[SECOND_EAR_OFFSET].toInt() !in knownStates</ID>
+    <ID>ComplexCondition:DongleSettings.kt:(state.usbVolumeRequested || state.usbVolumeEnabled) &amp;&amp; (!state.connected || state.audio == null || state.status?.capabilities?.and(128) != 128)</ID>
+    <ID>ComplexCondition:DongleUsbVolume.kt:DongleUsbVolume$!requested(selected.serial) || failedTarget == selected || wanted || job?.isCompleted == false</ID>
+    <ID>ComplexCondition:DongleUsbVolume.kt:DongleUsbVolume$!requested(selected.serial) || target() != selected || wanted || job?.isCompleted == false || !canStart()</ID>
+    <ID>ComplexCondition:DongleUsbVolume.kt:DongleUsbVolume$!wanted &amp;&amp; topology.get() == epoch &amp;&amp; target() == selected &amp;&amp; info?.getBoolean("available", false) == true &amp;&amp; deviceId &gt; 0 &amp;&amp; address != null &amp;&amp; UsbAbsoluteVolumeInspection.validAddress(address)</ID>
+    <ID>ComplexCondition:DongleUsbVolume.kt:DongleUsbVolume$baseline.value.authorityActive || baseline.value.confirmed == null || baseline.value.pending || baseline.value.inflight || !baseline.value.usbScopeReady</ID>
+    <ID>ComplexCondition:DongleUsbVolume.kt:DongleUsbVolume$fresh.value.confirmed != null &amp;&amp; !fresh.value.pending &amp;&amp; !fresh.value.inflight &amp;&amp; fresh.value.observationRevision != lastRevision</ID>
+    <ID>ComplexCondition:DongleUsbVolume.kt:DongleUsbVolume$observation.value.ownToken == token &amp;&amp; observation.value.usbGeneration == usbGeneration &amp;&amp; !observation.value.pending &amp;&amp; !observation.value.inflight &amp;&amp; observation.value.confirmed != null &amp;&amp; observation.value.observationRevision != revision</ID>
+    <ID>ComplexCondition:DongleUsbVolume.kt:DongleUsbVolume$requested.nativeEpoch != nativeEpoch.get() || fresh.observationRevision != revision || fresh.confirmed == null || fresh.confirmed != baseline.confirmed || fresh.pending || fresh.inflight</ID>
+    <ID>ComplexCondition:DongleUsbVolume.kt:DongleUsbVolume$wanted || now() - probedAt &lt; 10_000 &amp;&amp; probedTarget == selected || !probing.compareAndSet(false, true)</ID>
+    <ID>ComplexCondition:DongleUsbVolume.kt:DongleUsbVolume.&lt;no name provided&gt;$Binder.getCallingUid() == 1000 &amp;&amp; connection == selected.controlSession &amp;&amp; policyOwner === owner &amp;&amp; current() &amp;&amp; level in 0..127</ID>
+    <ID>ComplexCondition:EldCodecOverrideGuard.kt:EldCodecOverrideGuard.Companion$Character.isISOControl(it) || Character.getType(it) == Character.FORMAT.toInt() || it == '\u2028' || it == '\u2029'</ID>
+    <ID>ComplexCondition:EldCodecOverrideGuard.kt:EldCodecOverrideGuard.Companion$context == null || attribution == null || device == null || codec == null</ID>
+    <ID>ComplexCondition:EldFailurePolicy.kt:EldFailurePolicy$selected != null &amp;&amp; selected.first in connected &amp;&amp; codecs[selected.first] == EldCodecIdentity.MODULE_CODEC_ID &amp;&amp; health != null &amp;&amp; health.peer == selected.first &amp;&amp; validPeer(health.peer) &amp;&amp; health.generation &gt; lastAttemptedGeneration</ID>
+    <ID>ComplexCondition:EldFailureWatchdog.kt:EldFailureWatchdog.&lt;no name provided&gt;$policy.candidate() == owner &amp;&amp; (tick.keepPolling &amp;&amp; streaming.contains(owner.peer) || SystemClock.elapsedRealtime() &lt; pendingDeadline)</ID>
+    <ID>ComplexCondition:HfpBatteryNegotiation.kt:HfpBatteryNegotiation$arguments?.size != 2 || arguments[1] !is Int || (arguments[1] as Int) &lt; 0 || (arguments[1] as Int) and 2 == 0</ID>
+    <ID>ComplexCondition:HfpCallSuppression.kt:HfpCallSuppression$!rootOwner.isBinderAlive || !appOwner.isBinderAlive || currentService() !== service || closed.get()</ID>
+    <ID>ComplexCondition:HfpCallSuppression.kt:HfpSuppressionState$it.root == lease.root &amp;&amp; it.app == lease.app &amp;&amp; it.peer == lease.peer &amp;&amp; it.service === lease.service</ID>
+    <ID>ComplexCondition:IslandContent.kt:!motionEnabled || !hadReading || level == null || gauge.value == target</ID>
+    <ID>ComplexCondition:IslandContent.kt:islandState == IslandState.COMPACT || islandState == IslandState.EXPANDED &amp;&amp; (!islandSettings.expandedOpenAppOnTap || islandSettings.keepCompactVisible)</ID>
+    <ID>ComplexCondition:IslandContent.kt:islandState == IslandState.COMPACT || islandState == IslandState.EXPANDED &amp;&amp; (islandSettings.expandedOpenAppOnTap || islandSettings.keepCompactVisible)</ID>
+    <ID>ComplexCondition:IslandStatusBarCoverage.kt:!widthPx.isFinite() || !heightPx.isFinite() || !minimumWidthPx.isFinite() || !iconCenterYpx.isFinite() || !density.isFinite() || !cornerRadiusPx.isFinite() || widthPx &lt;= 0f || heightPx &lt;= 0f || minimumWidthPx &lt;= 0f || density &lt;= 0f || cornerRadiusPx &lt; 0f</ID>
+    <ID>ComplexCondition:IslandStatusBarCoverage.kt:widthPx &lt; minimumWidthPx - 0.5f || iconCenterYpx &lt; clearance || heightPx &lt; iconCenterYpx + clearance || !background.isSpecified || !(background.alpha &gt;= 0.9f &amp;&amp; background.luminance() &lt;= 0.18f)</ID>
+    <ID>ComplexCondition:IslandWindow.kt:IslandWindow$!isActive || generation != connectGeneration || ownerAddress != address || islandState == IslandState.CLOSE</ID>
+    <ID>ComplexCondition:IslandWindow.kt:IslandWindow$!isVisible || !nearby || connectState == IslandConnectState.CONNECTING || (connectState == IslandConnectState.IDLE &amp;&amp; connectActionDeferred) || type != IslandType.CONNECTED || statusText != null</ID>
+    <ID>ComplexCondition:IslandWindow.kt:IslandWindow$device != null &amp;&amp; canControlListening(device) &amp;&amp; it in 1..4 &amp;&amp; (it != 4 || BaseCapability.ADAPTIVE_AUDIO in AirPodsSpecs.getSpec(device.metadata.value.model).baseCapabilities) &amp;&amp; (it != 1 || device.state.value.effectiveAllowOff(device.settings.value, device.metadata.value.modelNumber) == true)</ID>
+    <ID>ComplexCondition:IslandWindow.kt:IslandWindow$device != null &amp;&amp; canControlListening(device) &amp;&amp; mode == 4 &amp;&amp; it in 0..100 &amp;&amp; BaseCapability.ADAPTIVE_AUDIO in AirPodsSpecs.getSpec(device.metadata.value.model).baseCapabilities</ID>
+    <ID>ComplexCondition:IslandWindow.kt:IslandWindow$device == null || ownerDevice !== device || !isVisible || type != IslandType.CONNECTED || nearby || listeningPickerTokens.isNotEmpty() || device.connectionState.value != ConnectionState.CONNECTED</ID>
+    <ID>ComplexCondition:IslandWindow.kt:IslandWindow$owner != null &amp;&amp; ownerDevice === owner &amp;&amp; isVisible &amp;&amp; type == IslandType.CONNECTED &amp;&amp; this.type == IslandType.CONNECTED &amp;&amp; statusText != null</ID>
+    <ID>ComplexCondition:IslandWindow.kt:IslandWindow$owner != null &amp;&amp; type == IslandType.CONNECTED &amp;&amp; statusText == null &amp;&amp; pairingOpenings.containsKey(owner.macAddress.value)</ID>
+    <ID>ComplexCondition:IslandWindow.kt:IslandWindow$ownerAddress == address &amp;&amp; type == IslandType.CONNECTED &amp;&amp; statusText == null &amp;&amp; onConnect != null &amp;&amp; observedAtNanos &gt; ownerAnnouncementAtNanos</ID>
+    <ID>ComplexCondition:IslandWindow.kt:IslandWindow$ownerDevice !== owner || islandState == IslandState.CLOSE || type != IslandType.CONNECTED || statusText != null || onConnect == null</ID>
+    <ID>ComplexCondition:IslandWindow.kt:IslandWindow$restartDismissal &amp;&amp; wasDeferred &amp;&amp; !connectActionDeferred &amp;&amp; !keepOpenRequested &amp;&amp; isVisible &amp;&amp; connectState == IslandConnectState.IDLE</ID>
+    <ID>ComplexCondition:KotlinModule.kt:KotlinModule$policy != null &amp;&amp; !UsbAbsoluteVolumeSystemPolicy.isOwnOperation() &amp;&amp; usb(device) &amp;&amp; policy.mayMutate() &amp;&amp; !policy.invalidate("foreign_volume_policy")</ID>
+    <ID>ComplexCondition:KotlinModule.kt:KotlinModule$policy != null &amp;&amp; type != null &amp;&amp; !UsbAbsoluteVolumeSystemPolicy.isOwnOperation() &amp;&amp; policy.ownsNativeType(type)</ID>
+    <ID>ComplexCondition:KotlinModule.kt:KotlinModule$policy != null &amp;&amp; usb(chain.args.firstOrNull()) &amp;&amp; policy.mayMutate() &amp;&amp; !policy.invalidate("usb_topology_changed") &amp;&amp; chain.args.getOrNull(1) == 1</ID>
+    <ID>ComplexCondition:KotlinModule.kt:KotlinModule.&lt;no name provided&gt;$arguments.size != 4 || arguments[0] &lt;= 0 || arguments[1] !in 0..0xeff || arguments[2] !in setOf(9L, 11L) || arguments[3] !in 1..500</ID>
+    <ID>ComplexCondition:LibrePodsService.kt:LibrePodsService$!destroying &amp;&amp; devices.value[device.macAddress] === device &amp;&amp; device.aacp.ownsAudioSocket(owner) &amp;&amp; device.state.value.controlStates[ControlCommandIdentifier.LISTENING_MODE] ?.singleOrNull()?.toInt()?.and(255) == mode</ID>
+    <ID>ComplexCondition:LibrePodsService.kt:LibrePodsService$!destroying &amp;&amp; hasNearbyDevicesPermissions(this@LibrePodsService) &amp;&amp; device is AppleDevice &amp;&amp; devices.value[device.macAddress] === device &amp;&amp; device.connectionState.value == ConnectionState.CONNECTED</ID>
+    <ID>ComplexCondition:LibrePodsService.kt:LibrePodsService$!started.get() &amp;&amp; !microphoneStarts.containsKey(address) &amp;&amp; audioControllers[address] === controller &amp;&amp; gameControllers[address] === game</ID>
+    <ID>ComplexCondition:LibrePodsService.kt:LibrePodsService$conversationEnabled &amp;&amp; !requestedMode &amp;&amp; modeReport?.singleOrNull() == 3.toByte() &amp;&amp; previousModeReport?.singleOrNull() != 3.toByte()</ID>
+    <ID>ComplexCondition:LibrePodsService.kt:LibrePodsService$destroying || !companionHolds.ready || dongleControls.inhibitsAutomaticNative() || handoffHost.operationActive(address) || !hasNativeAudioOutput(bluetoothDevice)</ID>
+    <ID>ComplexCondition:LibrePodsService.kt:LibrePodsService$destroying || communicationControllers[address] !== owner || !controller.bridge.hasRootPrivileges || checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED || controller.bridge.isMicrophonePrivacyBlocked() || !ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)</ID>
+    <ID>ComplexCondition:LibrePodsService.kt:LibrePodsService$destroying || devices.value[device.macAddress] !== device || device.connectionState.value != ConnectionState.CONNECTED || !settings.hrmAlertEnabled || state.hrmState != BuddyState.ACTIVE || sample == null || sample.bpm &lt;= settings.hrmAlertThreshold</ID>
+    <ID>ComplexCondition:LibrePodsService.kt:LibrePodsService$event == null || !eligible || event.sourceSocket !== socket || !device.aacp.ownsAudioSocket(event.sourceSocket)</ID>
+    <ID>ComplexCondition:LibrePodsService.kt:LibrePodsService$game == null || game.state.value.let { !it.desiredOn &amp;&amp; !it.active &amp;&amp; !it.restoring &amp;&amp; !it.remoteRestorePending }</ID>
+    <ID>ComplexCondition:ListeningModeDialog.kt:ListeningModeDialog$!control.enabled || (control.checked == null &amp;&amp; !control.recoveryOff) || (control.recoveryOff &amp;&amp; enabled) || control.checked == enabled</ID>
+    <ID>ComplexCondition:ListeningModeDialog.kt:ListeningModeDialog$current !== device || device.connectionState.value != ConnectionState.CONNECTED || !supportsListening(device.metadata.value) || service?.dongleControls?.state?.value?.usesDongleListeningControls == true</ID>
+    <ID>ComplexCondition:ListeningModeDialog.kt:ListeningModeDialog$service?.devices?.value?.get(address) !== device || device.aacp.captureAudioSocket() !== transport || device.state.value.controlSession != session || device.connectionNumber.value != connection || context.getSystemService(KeyguardManager::class.java).isKeyguardLocked</ID>
+    <ID>ComplexCondition:LivePcmConsumer.kt:BoundedPcmDelivery$bytes.isEmpty() || bytes.size % FORMAT.frameSize != 0 || presentationTimeUs &lt; 0 || bytes.size &gt; MAX_BYTES</ID>
+    <ID>ComplexCondition:LiveRecordEditor.kt:LiveRecordEditor$expectedRevision != revision || source.owner == null || !source.writable &amp;&amp; inFlight == null &amp;&amp; desired == null || !valid(confirmed)</ID>
+    <ID>ComplexCondition:LiveRecordEditor.kt:LiveRecordEditor$previous.revision == revision &amp;&amp; previous.pending == (inFlight != null) &amp;&amp; previous.data.contentEquals(source.data) &amp;&amp; previous.requested.contentEquals(desired)</ID>
+    <ID>ComplexCondition:LiveValueEditor.kt:LiveValueEditor$expectedRevision != revision || source.owner == null || !source.writable &amp;&amp; inFlight == null &amp;&amp; desired == null</ID>
+    <ID>ComplexCondition:MediaController.kt:MediaController$stage !in 1..3 || (stage != 1 &amp;&amp; (!conversationVolume.owns(owner) || !conversationVolume.speaking))</ID>
+    <ID>ComplexCondition:NativeGameModeController.kt:NativeGameModeController$peer.size != 6 || peer.any { it !in 0..255 } || peer.all { it == 0 } || peer.all { it == 255 }</ID>
+    <ID>ComplexCondition:NativeGameModeController.kt:NativeGameModeController.AndroidPorts$closed.get() || !desired.value || blocked() || !eligible() || !owns(owner)</ID>
+    <ID>ComplexCondition:NativeGameModeController.kt:NativeGameModeController.AndroidPorts$closed.get() || blocked() || (!restoring &amp;&amp; !desired.value) || !owns(owner)</ID>
+    <ID>ComplexCondition:NativeGameModeEngine.kt:NativeGameModeEngine$!blocked &amp;&amp; ownsRemote(control, value) &amp;&amp; value.host.streaming &amp;&amp; (value.host.startedMs != lastRestoreStart || becameUnblocked || desiredChanged || restoreRetryRequested)</ID>
+    <ID>ComplexCondition:NativeGameModeEngine.kt:NativeGameModeEngine$!blocked &amp;&amp; value.host.streaming &amp;&amp; value.host.encoderReady &amp;&amp; !value.host.scoOrMicrophone</ID>
+    <ID>ComplexCondition:NativeGameModeEngine.kt:NativeGameModeEngine$(eligible &amp;&amp; (!capabilityKnown || desired)) || holdSerial &gt; 0 || remoteRestorePending</ID>
+    <ID>ComplexCondition:NativeGameModeEngine.kt:NativeGameModeEngine$remoteRestorePending &amp;&amp; restoreWriteMayHaveReachedRemote &amp;&amp; !restoreReportSeen &amp;&amp; ownsRemote(control, value) &amp;&amp; NativeGameModePolicy.freshRestoreReport(policyOwner()!!, owner!!.session, value!!.host, beforeReport, sentAt, ports.nowMs(), sentAtNs)</ID>
+    <ID>ComplexCondition:NativeGameModeEngine.kt:NativeGameModeEngine$remoteRestorePending || holdSerial &lt;= 0 || value == null || !sameNativeOwner(value) || !value.noControllerMutation</ID>
+    <ID>ComplexCondition:NativeGameModeEngine.kt:NativeGameModeEngine$stage != Stage.IDLE &amp;&amp; stage != Stage.ACTIVE &amp;&amp; stage != Stage.UNRESOLVED &amp;&amp; ports.nowMs() &gt;= transitionDeadline</ID>
+    <ID>ComplexCondition:NativeGameModeEngine.kt:NativeGameModeEngine$stage != Stage.IDLE &amp;&amp; stage != Stage.UNRESOLVED &amp;&amp; (!desired || blocked || !eligible || !sameControl(owner, control) || !ports.owns(owner!!) || value == null || !sameRoute(value) || !value.host.streaming || value.host.scoOrMicrophone)</ID>
+    <ID>ComplexCondition:NativeGameModeEngine.kt:NativeGameModeEngine$value != null &amp;&amp; sameNativeOwner(value) &amp;&amp; value.clockRequest == clockRequest &amp;&amp; !value.clockPending</ID>
+    <ID>ComplexCondition:NativeGameModeEngine.kt:NativeGameModeEngine$value != null &amp;&amp; sameNativeOwner(value) &amp;&amp; value.restored &amp;&amp; !remoteRestorePending</ID>
+    <ID>ComplexCondition:NativeGameModeEngine.kt:NativeGameModeEngine$value == null || !sameNativeOwner(value) || !value.holding || !value.hasExpectedFlush(keepFlushBaseline)</ID>
+    <ID>ComplexCondition:NativeGameModeEngine.kt:NativeGameTargetGuard$target !in setOf(60, 150) || serial &lt;= 0 || value.serial != serial || value.requestPeer != owner.peer || value.requestMedia != route.host.mediaGeneration || value.requestEncoder != route.encoderGeneration || value.requestAcl != route.acl || value.host.peer != owner.peer || value.host.mediaGeneration != route.host.mediaGeneration || nowMs - value.observedMs !in 0..100</ID>
+    <ID>ComplexCondition:NativeGameSnapshot.kt:NativeGameSnapshot.Companion$!((input.size == 79 &amp;&amp; input[0] == 1L) || (input.size == 86 &amp;&amp; input[0] == 2L)) || input[61] != 1L</ID>
+    <ID>ComplexCondition:NativeGameSnapshot.kt:NativeGameSnapshot.Companion$input.size == 86 &amp;&amp; (listOf(79, 82, 83, 84).any { input[it] !in 0L..1L } || input[80] !in 0L..65535L || input[81] !in 0L..65535L || input[85] !in 0L..7L)</ID>
+    <ID>ComplexCondition:NativeGameSnapshot.kt:NativeGameSnapshot.Companion$listOf(1, 2, 9, 11, 13, 14, 56, 57).any { input[it] !in 0L..1L } || input[3] !in 0L..11L || input[4] !in 1L..3L || input[7] !in 0L..7L || input[10] !in 0L..2047L || input[12] !in 0L..2047L || input[17] !in 0L..65535L || input[31] !in 0L..65535L || input[30] !in 0L..65535L || input[32] !in 0L..65535L || input[33] !in 0L..255L || input[34] !in 0L..255L || input[35] !in 0L..63L || input[43] !in 0L..6L || input[45] !in 9L..11L || input[46] !in 0L..500L || input[53] !in 0L..65535L || input[54] !in 0L..255L || input[55] !in 0L..65535L || input[62] !in 0L..6L || input[71] !in 9L..11L || input[72] !in 9L..11L || input[73] !in 0L..500L || ((18..23) + (36..41) + (65..70)).any { input[it] !in 0L..255L }</ID>
+    <ID>ComplexCondition:NativeGameTransportClient.kt:NativeGameTransportClient$serial &lt;= 0 || closed || serverNonce == null || requestId == Long.MAX_VALUE</ID>
+    <ID>ComplexCondition:NativeSpatialAudioSetting.kt:!headTracking.busy &amp;&amp; !headTracking.spatialBusy &amp;&amp; snapshot?.writable == true &amp;&amp; current() &amp;&amp; (headTracking.spatialEnabled != null || !enabled)</ID>
+    <ID>ComplexCondition:NearbyPairingController.kt:NearbyPairingController$!consentReady() || candidates.ambiguous || receivedAt &gt; now || now &gt;= pending.deadline || device.bondState != BluetoothDevice.BOND_BONDING || device.type !in setOf(BluetoothDevice.DEVICE_TYPE_CLASSIC, BluetoothDevice.DEVICE_TYPE_DUAL) || !NearbyAirPods.matchesName(model, device.name) || selected?.device?.address?.let { it != device.address } == true</ID>
+    <ID>ComplexCondition:NearbyPairingController.kt:NearbyPairingController$(bondState !in setOf(BluetoothDevice.BOND_NONE, BluetoothDevice.BOND_BONDING) &amp;&amp; !(bondState == BluetoothDevice.BOND_BONDED &amp;&amp; device.address in bondingSeen)) || device.name?.let { !NearbyAirPods.matchesName(session.modelId ?: 0, it) } == true</ID>
+    <ID>ComplexCondition:NearbyPairingController.kt:NearbyPairingController$hint == null || receivedAt &lt; hint.receivedAt || !hint.isCurrent(now) || hint.pending != null || pendingConsent != null || selected?.consentRequested == true</ID>
+    <ID>ComplexCondition:NearbyPairingController.kt:NearbyPairingController.&lt;no name provided&gt;$(bondState !in setOf(BluetoothDevice.BOND_NONE, BluetoothDevice.BOND_BONDING) &amp;&amp; !(bondState == BluetoothDevice.BOND_BONDED &amp;&amp; device.address in bondingSeen)) || type !in setOf(BluetoothDevice.DEVICE_TYPE_CLASSIC, BluetoothDevice.DEVICE_TYPE_DUAL)</ID>
+    <ID>ComplexCondition:NearbyPairingController.kt:NearbyPairingController.&lt;no name provided&gt;$hints.putIfAbsent(address, ConsentHint(SystemClock.elapsedRealtime()).also { it.awaitingGate = isOrderedBroadcast &amp;&amp; consentGate?.isWatching == true &amp;&amp; consentReady() &amp;&amp; changed.type in setOf(BluetoothDevice.DEVICE_TYPE_CLASSIC, BluetoothDevice.DEVICE_TYPE_DUAL) &amp;&amp; NearbyAirPods.matchesName(model, changed.name) }) == null</ID>
+    <ID>ComplexCondition:NearbyPairingController.kt:NearbyPairingController.&lt;no name provided&gt;$nativeState == BluetoothDevice.BOND_BONDING &amp;&amp; (hints.size &lt; 16 || address in hints) &amp;&amp; (bondingSeen.size &lt; 16 || address in bondingSeen)</ID>
+    <ID>ComplexCondition:NoiseControlSettings.kt:enabled &amp;&amp; mode in 1..4 &amp;&amp; (mode != 4 || showAdaptiveMode) &amp;&amp; (mode != 1 || showOffListeningMode)</ID>
+    <ID>ComplexCondition:OwnedMediaPause.kt:OwnedMediaPause$!current() || !claim.mayResume() || sessions.firstOrNull()?.sessionToken != player.sessionToken || player.playbackState?.state != PlaybackState.STATE_PAUSED</ID>
+    <ID>ComplexCondition:OwnedMediaPause.kt:OwnedMediaPause.Companion$player.playbackState?.state != PlaybackState.STATE_PLAYING || player.playbackInfo?.playbackType != MediaController.PlaybackInfo.PLAYBACK_TYPE_LOCAL || player.playbackState!!.actions and PlaybackState.ACTION_PAUSE == 0L || !selectedPlayer(context, selected, player)</ID>
+    <ID>ComplexCondition:PairedBatteryTracker.kt:PairedBatteryTracker$destroying() || captureBlocked() || devices.value[device.macAddress] !== device || device.bluetoothDevice.bondState != BluetoothDevice.BOND_BONDED || device.aacp.captureAudioSocket() !== socket || device.state.value.magicKeys[MagicKeyType.IRK]?.contentEquals(irk) != true || device.state.value.magicKeys[MagicKeyType.ENC_KEY]?.contentEquals(encryption) != true</ID>
+    <ID>ComplexCondition:PairedBatteryTracker.kt:PairedBatteryTracker$destroying() || captureBlocked() || devices.value[device.macAddress] !== device || device.bluetoothDevice.bondState != BluetoothDevice.BOND_BONDED || device.metadata.value.model != AirPodsModel.AIRPODS_PRO_3 || device.state.value.magicKeys[MagicKeyType.ENC_KEY]?.contentEquals(key) != true</ID>
+    <ID>ComplexCondition:PairedBatteryTracker.kt:PairedBatteryTracker$devices.value[device.macAddress] !== device || device.bluetoothDevice.bondState != BluetoothDevice.BOND_BONDED || device.metadata.value.model != AirPodsModel.AIRPODS_PRO_3 || device.state.value.magicKeys[MagicKeyType.ENC_KEY]?.contentEquals(previous.key) != true</ID>
+    <ID>ComplexCondition:PairingArtwork.kt:PairingArtwork$!active || !animatedModel || failed || !ValueAnimator.areAnimatorsEnabled()</ID>
+    <ID>ComplexCondition:PairingArtwork.kt:PairingArtwork$!active || paused || !entranceComplete || !frameRendered || player == null || posterAnimation != null || poster.visibility != View.VISIBLE</ID>
+    <ID>ComplexCondition:PairingArtwork.kt:PairingArtwork$active &amp;&amp; rendering &amp;&amp; player != null &amp;&amp; texture === video.surfaceTexture</ID>
+    <ID>ComplexCondition:PairingArtwork.kt:PairingArtwork$width &lt;= 0 || height &lt;= 0 || video.width &lt;= 0 || video.height &lt;= 0</ID>
+    <ID>ComplexCondition:PairingConsentGate.kt:PairingConsentGate.&lt;no name provided&gt;$closed || remote !== source || requestId &lt;= 0 || receivedAt &lt; 0 || receivedAt &gt; now || now - receivedAt &gt;= PairingConsentService.HOLD_MS</ID>
+    <ID>ComplexCondition:PairingConsentService.kt:PairingConsentService.&lt;no name provided&gt;$!isOrderedBroadcast || pending != null || !currentOwner.asBinder().isBinderAlive || intent.getIntExtra(BluetoothDevice.EXTRA_PAIRING_VARIANT, -1) != 3</ID>
+    <ID>ComplexCondition:PopupWindow.kt:PopupWindow$!closing &amp;&amp; !notified &amp;&amp; button.isEnabled &amp;&amp; action != null</ID>
+    <ID>ComplexCondition:PopupWindow.kt:PopupWindow$closing || notified || !attached || !ValueAnimator.areAnimatorsEnabled()</ID>
+    <ID>ComplexCondition:QuickSettingsState.kt:!value.supported || value.recoveryOff || value.checked != null || known?.checked == null</ID>
+    <ID>ComplexCondition:RichText.kt:(icons is MaterialIcons &amp;&amp; !icons.isAppleIcon(name) || icons is AppleIcons &amp;&amp; icons.isMaterialIcon(name))</ID>
+    <ID>ComplexCondition:RootDongleHid.kt:RootDongleHid.AndroidAccess$!DongleUsb.candidate(device) || device.productId != target.product || (0 until device.interfaceCount).none { val intf = device.getInterface(it) intf.id == target.interfaceId &amp;&amp; intf.interfaceClass == UsbConstants.USB_CLASS_HID &amp;&amp; intf.interfaceSubclass == 0 &amp;&amp; intf.interfaceProtocol == 0 }</ID>
+    <ID>ComplexCondition:SettingsRefresher.kt:SettingsRefresher$captureBusy() || device.state.value.recordingState.isRecording || device.state.value.microphoneState.isActive || !controller.canRefreshSettings()</ID>
+    <ID>ComplexCondition:ShizukuAudioClient.kt:ShizukuAudioClient$!closed &amp;&amp; bridge === remote &amp;&amp; request.active.get() &amp;&amp; stillCurrent()</ID>
+    <ID>ComplexCondition:ShizukuAudioClient.kt:ShizukuAudioClient$closed || bridge != null || bound || connecting</ID>
+    <ID>ComplexCondition:ShizukuAudioClient.kt:ShizukuAudioClient$closed || bridge == null || settingsRefresh || playbackRequest != null || communicationRequest != null</ID>
+    <ID>ComplexCondition:ShizukuAudioClient.kt:ShizukuAudioClient$closed || requireRoot || bridge != null || connecting</ID>
+    <ID>ComplexCondition:ShizukuAudioService.kt:ShizukuAudioService$mutation &amp;&amp; (spatialMutating || volumeChecking || playbackRecovery != null || playbackRelease != null || callConnection != null || !probeIsQuiet())</ID>
+    <ID>ComplexCondition:SpatialPoseConverter.kt:SpatialPoseConverter$fenceStartupZeros &amp;&amp; !producedPose &amp;&amp; (attitudeWasZero || initialHeadInverse == null)</ID>
+    <ID>ComplexCondition:SpatialPoseProfileStore.kt:SpatialPoseProfileStore$key.formatVersion != 1 || key.rawRole.size !in 1..64 || key.rawRole.first() !in 1..2 || key.rawRole.any { it !in 0..255 } || key.modelNumber.isBlank() || key.firmware.isBlank() || key.modelNumber.length &gt; 256 || key.firmware.length &gt; 256</ID>
+    <ID>ComplexCondition:StyledSlider.kt:currentEnabled &amp;&amp; !dragCanceled &amp;&amp; userChangeStarted &amp;&amp; (currentValue == lastUserValue || currentValue == dragObservedValue)</ID>
+    <ID>ComplexCondition:UpdateHearingTestScreen.kt:index !in 0..7 || !value.isFinite() || value !in 0f..90f || !hearingAidSettingsWritable(data)</ID>
+    <ID>ComplexCondition:UsbAbsoluteVolumeBroker.kt:UsbAbsoluteVolumeBroker$now() &gt;= current.deadline || !runCatching { current.policy.stillOwned() }.getOrDefault(false) || route?.target != current.target || !route.soleUsbOutput || !route.selected || !route.normalMode</ID>
+    <ID>ComplexCondition:UsbVolumeMute.kt:UsbPhysicalVolumeState$nextMute &amp;&amp; this.muted &amp;&amp; nextIndex != this.hostIndex &amp;&amp; index in 1..127</ID>
+    <ID>ComplexCondition:WearMediaController.kt:WearMediaController$!owner.paused || owner.transport !== transport || wearMediaEpochs[pod.macAddress] !== owner || !pod.aacp.ownsAudioSocket(transport) || pod.state.value.componentState != newComponentState</ID>
+    <ID>CyclomaticComplexMethod:A2dpPlaybackRecovery.kt:A2dpPlaybackRecovery$@SuppressLint("MissingPermission") internal fun connectProfile: Boolean</ID>
+    <ID>CyclomaticComplexMethod:A2dpPlaybackRecovery.kt:A2dpPlaybackRecovery$@SuppressLint("MissingPermission", "SoonBlockedPrivateApi") fun run: Boolean</ID>
+    <ID>CyclomaticComplexMethod:AirPodsMicrophone.kt:AirPodsMicrophone$private fun capture</ID>
+    <ID>CyclomaticComplexMethod:AirPodsMicrophone.kt:AirPodsMicrophone$private fun finishUplink</ID>
+    <ID>CyclomaticComplexMethod:AirPodsMicrophone.kt:AirPodsMicrophone$private fun receive</ID>
+    <ID>CyclomaticComplexMethod:AirPodsQSService.kt:AirPodsQSService$private fun openPicker</ID>
+    <ID>CyclomaticComplexMethod:AppleViewModel.kt:AppleViewModel$internal fun liveATTEditor: LiveRecordEditor</ID>
+    <ID>CyclomaticComplexMethod:AppleViewModel.kt:AppleViewModel$internal fun liveAccommodationsEditor: LiveAccommodationsEditor</ID>
+    <ID>CyclomaticComplexMethod:AppleViewModel.kt:AppleViewModel$suspend fun renameDevice: Boolean</ID>
+    <ID>CyclomaticComplexMethod:BleScanController.kt:BleScanController$fun start</ID>
+    <ID>CyclomaticComplexMethod:BluetoothVolumeSync.kt:BluetoothVolumeSync$fun check: Boolean</ID>
+    <ID>CyclomaticComplexMethod:CalibratedHeadMotion.kt:internal suspend fun streamCalibratedHeadMotion</ID>
+    <ID>CyclomaticComplexMethod:CommunicationAudioController.kt:CommunicationAudioController$private suspend fun poll</ID>
+    <ID>CyclomaticComplexMethod:CommunicationAudioController.kt:CommunicationAudioController$private suspend fun runCall</ID>
+    <ID>CyclomaticComplexMethod:CompanionHandoffController.kt:CompanionHandoffController$@SuppressLint("MissingPermission") fun link</ID>
+    <ID>CyclomaticComplexMethod:CompanionHandoffController.kt:CompanionHandoffController$@Synchronized fun reconnect</ID>
+    <ID>CyclomaticComplexMethod:CompanionHandoffController.kt:CompanionHandoffController$@Synchronized private fun admitIncoming</ID>
+    <ID>CyclomaticComplexMethod:CompanionHandoffController.kt:CompanionHandoffController$private fun reservationCurrent: Boolean</ID>
+    <ID>CyclomaticComplexMethod:CompanionHandoffController.kt:CompanionHandoffController$private suspend fun handle</ID>
+    <ID>CyclomaticComplexMethod:CompanionHandoffController.kt:CompanionHandoffController$private suspend fun updateCall</ID>
+    <ID>CyclomaticComplexMethod:CompanionHandoffHost.kt:CompanionHandoffHost$suspend fun companionCallAcquire: String</ID>
+    <ID>CyclomaticComplexMethod:CompanionHandoffHost.kt:CompanionHandoffHost$suspend fun companionMedia: CompanionMediaSample</ID>
+    <ID>CyclomaticComplexMethod:CompanionHandoffHost.kt:CompanionHandoffHost$suspend fun companionOperation: String</ID>
+    <ID>CyclomaticComplexMethod:CompanionMedia.kt:CompanionMedia$@Synchronized fun observe: CompanionMediaState</ID>
+    <ID>CyclomaticComplexMethod:CompanionMediaInspection.kt:CompanionMediaInspection$fun read: Bundle</ID>
+    <ID>CyclomaticComplexMethod:CompanionPairing.kt:CompanionPairingClient$private fun begin</ID>
+    <ID>CyclomaticComplexMethod:CompanionPreferenceAdapter.kt:CompanionPreferenceAdapter$suspend fun apply: Boolean</ID>
+    <ID>CyclomaticComplexMethod:CompanionPreferences.kt:CompanionPreferences$private fun load</ID>
+    <ID>CyclomaticComplexMethod:CompanionPreferences.kt:CompanionPreferences$suspend fun receive: Pair&lt;String, Record?&gt;</ID>
+    <ID>CyclomaticComplexMethod:CompanionProtocol.kt:CompanionProtocol$fun validate</ID>
+    <ID>CyclomaticComplexMethod:ConversationVolume.kt:ConversationVolume$fun begin: Boolean</ID>
+    <ID>CyclomaticComplexMethod:DongleAppleState.kt:internal fun DongleState.appleUiState: AppleUiState</ID>
+    <ID>CyclomaticComplexMethod:DongleAtt.kt:DongleAtt$suspend fun discover: Characteristic?</ID>
+    <ID>CyclomaticComplexMethod:DongleController.kt:DongleController$private fun recordEditor: LiveRecordEditor</ID>
+    <ID>CyclomaticComplexMethod:DongleController.kt:DongleController$private suspend fun followEars</ID>
+    <ID>CyclomaticComplexMethod:DongleController.kt:DongleController$private suspend fun refresh</ID>
+    <ID>CyclomaticComplexMethod:DongleController.kt:DongleController$private suspend fun runConnection</ID>
+    <ID>CyclomaticComplexMethod:DongleHearingRecords.kt:DongleHearingRecords$suspend fun writeAccommodations</ID>
+    <ID>CyclomaticComplexMethod:DongleHidIdentity.kt:DongleHidIdentity$fun matches: Boolean</ID>
+    <ID>CyclomaticComplexMethod:DongleLiveSettings.kt:internal fun DongleState.canEditSetting: Boolean</ID>
+    <ID>CyclomaticComplexMethod:DongleLiveSettings.kt:internal fun DongleState.canWriteSetting: Boolean</ID>
+    <ID>CyclomaticComplexMethod:DongleProtocol.kt:DongleProtocol$fun exchange: ByteArray</ID>
+    <ID>CyclomaticComplexMethod:DongleProtocol.kt:DongleProtocol$fun status: Status</ID>
+    <ID>CyclomaticComplexMethod:DongleProtocol.kt:DongleSession$private suspend fun transactBeforeDeadline: ByteArray</ID>
+    <ID>CyclomaticComplexMethod:DongleUsb.kt:DongleUsb$fun vendorReports: Boolean</ID>
+    <ID>CyclomaticComplexMethod:DongleUsb.kt:DongleUsb$suspend fun open: Link</ID>
+    <ID>CyclomaticComplexMethod:DongleUsb.kt:DongleUsb.Link$fun exchange: ByteArray</ID>
+    <ID>CyclomaticComplexMethod:DongleUsbVolume.kt:DongleUsbVolume$fun probe</ID>
+    <ID>CyclomaticComplexMethod:DongleUsbVolume.kt:DongleUsbVolume$private suspend fun run</ID>
+    <ID>CyclomaticComplexMethod:GameNativeGateway.kt:NativeGameTransportRules$fun validPayload</ID>
+    <ID>CyclomaticComplexMethod:HfpCallSuppression.kt:HfpCallSuppression$@Synchronized override fun acquire: Bundle</ID>
+    <ID>CyclomaticComplexMethod:HfpCallTransport.kt:HfpCallTransport$suspend fun discover: IHfpCallControl?</ID>
+    <ID>CyclomaticComplexMethod:IslandListeningMode.kt:IslandListeningMode$fun observeReport: Int?</ID>
+    <ID>CyclomaticComplexMethod:IslandStatusBarCoverage.kt:internal fun islandCoversStatusBar: Boolean</ID>
+    <ID>CyclomaticComplexMethod:IslandWindow.kt:IslandWindow$fun show</ID>
+    <ID>CyclomaticComplexMethod:IslandWindow.kt:IslandWindow$private fun requestConnect</ID>
+    <ID>CyclomaticComplexMethod:KotlinModule.kt:KotlinModule$private fun installEldCodecBridge</ID>
+    <ID>CyclomaticComplexMethod:KotlinModule.kt:KotlinModule$private fun installUsbVolumePolicy</ID>
+    <ID>CyclomaticComplexMethod:LibrePodsService.kt:LibrePodsService$fun observeAppleState: Job</ID>
+    <ID>CyclomaticComplexMethod:LibrePodsService.kt:LibrePodsService$fun observeConversationAwareness: Job</ID>
+    <ID>CyclomaticComplexMethod:LibrePodsService.kt:LibrePodsService$fun updateWidgets</ID>
+    <ID>CyclomaticComplexMethod:LibrePodsService.kt:LibrePodsService$override fun onCreate</ID>
+    <ID>CyclomaticComplexMethod:LibrePodsService.kt:LibrePodsService$override fun onStartCommand: Int</ID>
+    <ID>CyclomaticComplexMethod:LibrePodsService.kt:LibrePodsService$private fun attachExperimentalAudio</ID>
+    <ID>CyclomaticComplexMethod:LibrePodsService.kt:LibrePodsService$private fun checkBluetoothVolumeSync</ID>
+    <ID>CyclomaticComplexMethod:LibrePodsService.kt:LibrePodsService$private fun handleScanResult</ID>
+    <ID>CyclomaticComplexMethod:LibrePodsService.kt:LibrePodsService$private fun requestMicrophoneStart: Boolean</ID>
+    <ID>CyclomaticComplexMethod:LibrePodsService.kt:LibrePodsService$private fun setMicrophoneActive</ID>
+    <ID>CyclomaticComplexMethod:LibrePodsService.kt:LibrePodsService$private suspend fun createDevice: Device&lt;*, *, *&gt;?</ID>
+    <ID>CyclomaticComplexMethod:LibrePodsService.kt:LibrePodsService$private suspend fun onDeviceConnected</ID>
+    <ID>CyclomaticComplexMethod:ListeningModeDialog.kt:ListeningModeDialog$internal fun writeControl: Boolean</ID>
+    <ID>CyclomaticComplexMethod:ListeningModeDialog.kt:ListeningModeDialog$internal fun writeQuickSetting: Boolean</ID>
+    <ID>CyclomaticComplexMethod:LivePcmConsumer.kt:BoundedPcmDelivery$private fun deliver</ID>
+    <ID>CyclomaticComplexMethod:MicrophoneRouteProbeReceiver.kt:MicrophoneRouteProbeReceiver$private suspend fun runProbe</ID>
+    <ID>CyclomaticComplexMethod:NativeCallConnection.kt:NativeCallConnection$@SuppressLint("MissingPermission", "SoonBlockedPrivateApi") fun run: Int</ID>
+    <ID>CyclomaticComplexMethod:NativeCallConnection.kt:NativeCallConnection.Companion$internal fun connectSelected: Boolean</ID>
+    <ID>CyclomaticComplexMethod:NativeGameModeController.kt:NativeGameModeController.AndroidPorts$override suspend fun target: GameTargetWrite</ID>
+    <ID>CyclomaticComplexMethod:NativeGameModeEngine.kt:NativeGameModeEngine$suspend fun tick: NativeGameModeController.State</ID>
+    <ID>CyclomaticComplexMethod:NativeGameModeEngine.kt:NativeGameTargetGuard$fun preflight: Boolean</ID>
+    <ID>CyclomaticComplexMethod:NativeGameProbeReceiver.kt:NativeGameProbeReceiver$override fun onReceive</ID>
+    <ID>CyclomaticComplexMethod:NativeGameSnapshot.kt:NativeGameSnapshot.Companion$fun parse: NativeGameSnapshot?</ID>
+    <ID>CyclomaticComplexMethod:NativeGameTransportClient.kt:NativeGameTransportClient$private fun accept</ID>
+    <ID>CyclomaticComplexMethod:NativeHeadTrackingController.kt:NativeHeadTrackingController$private suspend fun runSensor</ID>
+    <ID>CyclomaticComplexMethod:NativePlaybackRelease.kt:NativePlaybackRelease$@SuppressLint("MissingPermission", "SoonBlockedPrivateApi") fun run: Boolean</ID>
+    <ID>CyclomaticComplexMethod:NativePlaybackRelease.kt:NativePlaybackRelease.Companion$internal fun releaseProfiles: Boolean</ID>
+    <ID>CyclomaticComplexMethod:NativeQuickControls.kt:NativeQuickControls$private fun source: LiveValueSource&lt;Long&gt;</ID>
+    <ID>CyclomaticComplexMethod:NearbyConnector.kt:NearbyConnector$suspend fun connect: Boolean</ID>
+    <ID>CyclomaticComplexMethod:NearbyPairingController.kt:NearbyPairingController$private fun confirmSelectedConsent</ID>
+    <ID>CyclomaticComplexMethod:NearbyPairingController.kt:NearbyPairingController$private fun pair</ID>
+    <ID>CyclomaticComplexMethod:NearbyPairingController.kt:NearbyPairingController$private fun startScan</ID>
+    <ID>CyclomaticComplexMethod:PairedBatteryTracker.kt:PairedBatteryTracker$fun handleCaseBattery</ID>
+    <ID>CyclomaticComplexMethod:PairingArtwork.kt:PairingArtwork$private fun updatePlayback</ID>
+    <ID>CyclomaticComplexMethod:PipePcmConsumer.kt:PipePcmConsumer$override fun onPcm</ID>
+    <ID>CyclomaticComplexMethod:PopupWindow.kt:PopupWindow$fun showPairingActions</ID>
+    <ID>CyclomaticComplexMethod:PopupWindow.kt:PopupWindow$private fun renderBattery</ID>
+    <ID>CyclomaticComplexMethod:QuickSettingsState.kt:internal fun nativeQuickSettings: List&lt;QuickSettingState&gt;</ID>
+    <ID>CyclomaticComplexMethod:QuickSettingsState.kt:private fun quickSettings: List&lt;QuickSettingState&gt;</ID>
+    <ID>CyclomaticComplexMethod:RootHeadTrackerProbe.kt:RootHeadTrackerProbe$fun disable: Bundle</ID>
+    <ID>CyclomaticComplexMethod:RootHeadTrackerProbe.kt:RootHeadTrackerProbe.Lease$fun state: Bundle</ID>
+    <ID>CyclomaticComplexMethod:RootHeadTrackerProbe.kt:RootHeadTrackerProbe.Lease$private fun run</ID>
+    <ID>CyclomaticComplexMethod:RootUsbAbsoluteVolume.kt:RootUsbAbsoluteVolume$private fun proof: Proof</ID>
+    <ID>CyclomaticComplexMethod:SettingsRefresher.kt:SettingsRefresher$suspend fun refresh: DeviceSettingsRefreshResult</ID>
+    <ID>CyclomaticComplexMethod:ShizukuAudioClient.kt:ShizukuAudioClient$@androidx.annotation.WorkerThread fun checkVolumeSync: Boolean</ID>
+    <ID>CyclomaticComplexMethod:ShizukuAudioClient.kt:ShizukuAudioClient$internal suspend fun prepareCommunication: CommunicationLease</ID>
+    <ID>CyclomaticComplexMethod:ShizukuAudioClient.kt:ShizukuAudioClient$internal suspend fun prepareMicrophoneProbe: MicrophoneProbeLease</ID>
+    <ID>CyclomaticComplexMethod:ShizukuAudioClient.kt:ShizukuAudioClient$override fun close</ID>
+    <ID>CyclomaticComplexMethod:ShizukuAudioClient.kt:ShizukuAudioClient$private suspend fun nativePlayback: Boolean</ID>
+    <ID>CyclomaticComplexMethod:ShizukuAudioClient.kt:ShizukuAudioClient$private suspend fun openHeadTracker: HeadTrackerLease</ID>
+    <ID>CyclomaticComplexMethod:ShizukuAudioClient.kt:ShizukuAudioClient$private suspend fun spatialAudioCall: Bundle</ID>
+    <ID>CyclomaticComplexMethod:ShizukuAudioClient.kt:ShizukuAudioClient$suspend fun confirmPairing: Boolean</ID>
+    <ID>CyclomaticComplexMethod:ShizukuAudioService.kt:ShizukuAudioService$override fun prepareCommunication: Bundle</ID>
+    <ID>CyclomaticComplexMethod:ShizukuAudioService.kt:ShizukuAudioService$override fun prepareMicrophoneProbe: Bundle</ID>
+    <ID>CyclomaticComplexMethod:ShizukuAudioService.kt:ShizukuAudioService$private fun spatialAudioCall: Bundle</ID>
+    <ID>CyclomaticComplexMethod:SpatialAudioAccess.kt:SpatialAudioAccess$@Synchronized fun setFixedEnabled: Bundle</ID>
+    <ID>CyclomaticComplexMethod:SpatialHeadTrackingProbe.kt:SpatialHeadTrackingProbe$suspend fun run: SpatialHeadTrackingProbeResult</ID>
+    <ID>CyclomaticComplexMethod:SpatialPoseConverter.kt:SpatialPoseConverter$private fun advance: SpatialPose?</ID>
+    <ID>CyclomaticComplexMethod:UsbAbsoluteVolumeBroker.kt:UsbAbsoluteVolumeBroker$@Synchronized fun renew: Result</ID>
+    <ID>CyclomaticComplexMethod:UsbAbsoluteVolumeSystemPolicy.kt:UsbAbsoluteVolumeSystemPolicy$override fun acquire: Bundle</ID>
+    <ID>CyclomaticComplexMethod:WearMediaController.kt:WearMediaController$fun onComponentStateChange</ID>
+    <ID>EmptyElseBlock:CompanionHandoffController.kt:CompanionHandoffController$if (incoming === event) incoming = null</ID>
+    <ID>EmptyElseBlock:DongleUsbVolume.kt:DongleUsbVolume$if (!wanted) publish(State())</ID>
+    <ID>EmptyElseBlock:EldFailurePolicy.kt:EldFailurePolicy$if (selection?.first == peer) retired = null</ID>
+    <ID>EmptyElseBlock:EldFailurePolicy.kt:EldFailurePolicy$if (validPeer(peer)) connected.add(peer.toList())</ID>
+    <ID>EmptyElseBlock:KotlinModule.kt:KotlinModule$if (!active) return@intercept chain.proceed()</ID>
+    <ID>EmptyElseBlock:ListeningModeDialog.kt:ListeningModeSnapshot$if (adaptive) add(4)</ID>
+    <ID>EmptyElseBlock:ListeningModeDialog.kt:ListeningModeSnapshot$if (allowOff) add(1)</ID>
+    <ID>HasPlatformType:CompanionPreferences.kt:CompanionPreferences.Record$fun frame</ID>
+    <ID>ImplicitDefaultLocale:BatteryIndicator.kt:String.format( "%08X", color.toArgb() )</ID>
+    <ID>ImplicitDefaultLocale:CompanionProtocol.kt:CompanionProtocol$"%02x".format(it.toInt() and 255)</ID>
+    <ID>ImplicitDefaultLocale:SpatialPoseProfileStore.kt:SpatialPoseProfileStore$"%02x".format(it.toInt() and 255)</ID>
+    <ID>ImplicitDefaultLocale:StyledListItem.kt:String.format("#%08X", color.toArgb())</ID>
+    <ID>ImplicitDefaultLocale:StyledListItem.kt:String.format("%08X", color.toArgb())</ID>
+    <ID>InstanceOfCheckForException:CompanionHandoffController.kt:CompanionHandoffController$error is IOException</ID>
+    <ID>InstanceOfCheckForException:DongleController.kt:DongleController$error is DongleUsbControlsUnavailable</ID>
+    <ID>InstanceOfCheckForException:DongleProtocol.kt:DongleSession$error !is DongleBusyException</ID>
+    <ID>InstanceOfCheckForException:NativeHeadTrackingController.kt:NativeHeadTrackingController$error is CalibratedHeadMotionFault</ID>
+    <ID>InstanceOfCheckForException:RootDongleHid.kt:RootDongleHid.Connection$error !is RuntimeException</ID>
+    <ID>InstanceOfCheckForException:RootDongleHid.kt:RootDongleHid.Connection$error is Exception</ID>
+    <ID>InstanceOfCheckForException:RootHeadTrackerProbe.kt:RootHeadTrackerProbe$error is InterruptedException</ID>
+    <ID>InstanceOfCheckForException:ShizukuAudioService.kt:ShizukuAudioService$error is RuntimeException</ID>
+    <ID>LargeClass:AppleIcons.kt:AppleIcons : IconSet</ID>
+    <ID>LargeClass:CompanionHandoffController.kt:CompanionHandoffController : AutoCloseable</ID>
+    <ID>LargeClass:DongleController.kt:DongleController : Closeable</ID>
+    <ID>LargeClass:LibrePodsService.kt:LibrePodsService : Service</ID>
+    <ID>LargeClass:MaterialIcons.kt:MaterialIcons : IconSet</ID>
+    <ID>LargeClass:NativeHeadTrackingController.kt:NativeHeadTrackingController : AutoCloseable</ID>
+    <ID>LargeClass:ShizukuAudioClient.kt:ShizukuAudioClient : Closeable</ID>
+    <ID>LongMethod:AirPodsMicrophone.kt:AirPodsMicrophone$private fun capture</ID>
+    <ID>LongMethod:BluetoothVolumeSync.kt:BluetoothVolumeSync$fun check: Boolean</ID>
+    <ID>LongMethod:CalibratedHeadMotion.kt:internal suspend fun streamCalibratedHeadMotion</ID>
+    <ID>LongMethod:CommunicationAudioController.kt:CommunicationAudioController$private suspend fun poll</ID>
+    <ID>LongMethod:CommunicationAudioController.kt:CommunicationAudioController$private suspend fun runCall</ID>
+    <ID>LongMethod:CompanionHandoffController.kt:CompanionHandoffController$@Synchronized fun reconnect</ID>
+    <ID>LongMethod:CompanionHandoffController.kt:CompanionHandoffController$private suspend fun handle</ID>
+    <ID>LongMethod:CompanionPairing.kt:CompanionPairingClient$private fun begin</ID>
+    <ID>LongMethod:CompanionProtocol.kt:CompanionProtocol$fun validate</ID>
+    <ID>LongMethod:DongleAppleState.kt:internal fun DongleState.appleUiState: AppleUiState</ID>
+    <ID>LongMethod:DongleAutomaticReads.kt:DongleAutomaticReads$private suspend fun readHealth</ID>
+    <ID>LongMethod:DongleController.kt:DongleController$private suspend fun runConnection</ID>
+    <ID>LongMethod:DongleHearingRecords.kt:DongleHearingRecords$suspend fun writeAccommodations</ID>
+    <ID>LongMethod:DongleProtocol.kt:DongleSession$private suspend fun transactBeforeDeadline: ByteArray</ID>
+    <ID>LongMethod:DongleUsbVolume.kt:DongleUsbVolume$private suspend fun run</ID>
+    <ID>LongMethod:IslandWindow.kt:IslandWindow$fun show</ID>
+    <ID>LongMethod:IslandWindow.kt:IslandWindow$private fun setupComposeView</ID>
+    <ID>LongMethod:KotlinModule.kt:KotlinModule$private fun installEldCodecBridge</ID>
+    <ID>LongMethod:LibrePodsService.kt:LibrePodsService$fun observeAppleState: Job</ID>
+    <ID>LongMethod:LibrePodsService.kt:LibrePodsService$fun showIsland</ID>
+    <ID>LongMethod:LibrePodsService.kt:LibrePodsService$fun startForegroundNotification</ID>
+    <ID>LongMethod:LibrePodsService.kt:LibrePodsService$fun updateDeviceNotification</ID>
+    <ID>LongMethod:LibrePodsService.kt:LibrePodsService$fun updateWidgets</ID>
+    <ID>LongMethod:LibrePodsService.kt:LibrePodsService$override fun onCreate</ID>
+    <ID>LongMethod:LibrePodsService.kt:LibrePodsService$private fun attachExperimentalAudio</ID>
+    <ID>LongMethod:LibrePodsService.kt:LibrePodsService$private suspend fun createDevice: Device&lt;*, *, *&gt;?</ID>
+    <ID>LongMethod:LibrePodsService.kt:LibrePodsService.&lt;no name provided&gt;$@SuppressLint("MissingPermission") override fun onReceive</ID>
+    <ID>LongMethod:ListeningModeDialog.kt:ListeningModeDialog$internal fun writeQuickSetting: Boolean</ID>
+    <ID>LongMethod:ListeningModeDialog.kt:ListeningModeDialog.&lt;no name provided&gt;$override fun onServiceConnected</ID>
+    <ID>LongMethod:MediaController.kt:MediaController.&lt;no name provided&gt;$override fun onPlaybackConfigChanged</ID>
+    <ID>LongMethod:MicrophoneRouteProbeReceiver.kt:MicrophoneRouteProbeReceiver$private suspend fun runProbe</ID>
+    <ID>LongMethod:NativeGameModeEngine.kt:NativeGameModeEngine$suspend fun tick: NativeGameModeController.State</ID>
+    <ID>LongMethod:NativeHeadTrackingController.kt:NativeHeadTrackingController$private suspend fun runSensor</ID>
+    <ID>LongMethod:NearbyConnector.kt:NearbyConnector$suspend fun connect: Boolean</ID>
+    <ID>LongMethod:NearbyPairingController.kt:NearbyPairingController$private fun confirmSelectedConsent</ID>
+    <ID>LongMethod:NearbyPairingController.kt:NearbyPairingController.&lt;no name provided&gt;$override fun onReceive</ID>
+    <ID>LongMethod:NoiseControlWidgetConfigurationActivity.kt:NoiseControlWidgetConfigurationActivity$override fun onCreate</ID>
+    <ID>LongMethod:ReleaseNotesScreen.kt:fun createTopWavyRectPath: Path</ID>
+    <ID>LongMethod:RootHeadTrackerProbe.kt:RootHeadTrackerProbe.Lease$private fun run</ID>
+    <ID>LongMethod:SettingsRefresher.kt:SettingsRefresher$suspend fun refresh: DeviceSettingsRefreshResult</ID>
+    <ID>LongMethod:SpatialHeadTrackingProbe.kt:SpatialHeadTrackingProbe$suspend fun run: SpatialHeadTrackingProbeResult</ID>
+    <ID>LongParameterList:BleScanController.kt:BleScanController</ID>
+    <ID>LongParameterList:CalibratedHeadMotion.kt:internal suspend fun streamCalibratedHeadMotion</ID>
+    <ID>LongParameterList:CommunicationAudioController.kt:CommunicationAudioController</ID>
+    <ID>LongParameterList:CompanionHandoffHost.kt:CompanionHandoffHost</ID>
+    <ID>LongParameterList:CompanionPairing.kt:CompanionPairingClient</ID>
+    <ID>LongParameterList:ConversationVolume.kt:ConversationVolume$fun begin: Boolean</ID>
+    <ID>LongParameterList:DongleController.kt:DongleController$private suspend fun accommodationsAwaited: AccommodationsRequestState</ID>
+    <ID>LongParameterList:DongleEditingLease.kt:DongleEditingLease</ID>
+    <ID>LongParameterList:DongleHearingRecords.kt:DongleHearingRecords$suspend fun writeAccommodations</ID>
+    <ID>LongParameterList:DongleUsbVolume.kt:DongleUsbVolume</ID>
+    <ID>LongParameterList:DongleUsbVolume.kt:DongleUsbVolume$private suspend fun awaitPhysical: Observation</ID>
+    <ID>LongParameterList:ExternalSpatialMotion.kt:ExternalSpatialMotion</ID>
+    <ID>LongParameterList:IslandStatusBarCoverage.kt:internal fun islandCoversStatusBar: Boolean</ID>
+    <ID>LongParameterList:KotlinModule.kt:NativeBridge$external fun beginNativeGameClock: LongArray</ID>
+    <ID>LongParameterList:KotlinModule.kt:NativeBridge$external fun submitNativeGame: LongArray</ID>
+    <ID>LongParameterList:MediaController.kt:MediaController$@Synchronized fun startSpeaking</ID>
+    <ID>LongParameterList:NativeGameModeEngine.kt:NativeGameTargetGuard$fun finalWrite</ID>
+    <ID>LongParameterList:NativeGameModeEngine.kt:NativeGameTargetGuard$fun preflight: Boolean</ID>
+    <ID>LongParameterList:NativeGameModePolicy.kt:NativeGameModePolicy$fun freshReport</ID>
+    <ID>LongParameterList:NativeGameModePolicy.kt:NativeGameModePolicy$fun freshRestoreReport</ID>
+    <ID>LongParameterList:NativeGameTransportClient.kt:NativeGameTransportClient$suspend fun beginClock</ID>
+    <ID>LongParameterList:NativeHeadTrackingController.kt:NativeHeadTrackingController</ID>
+    <ID>LongParameterList:NativeHeadTrackingController.kt:NativeHeadTrackingController$private suspend fun runSensor</ID>
+    <ID>LongParameterList:NearbyConnector.kt:NearbyConnector</ID>
+    <ID>LongParameterList:NearbyPairingController.kt:NearbyPairingController$private fun handleBondEvent</ID>
+    <ID>LongParameterList:NearbyPairingController.kt:NearbyPairingController$private fun pair</ID>
+    <ID>LongParameterList:PairedBatteryTracker.kt:PairedBatteryTracker$fun acceptOwnedReport: ProximityReport?</ID>
+    <ID>LongParameterList:QuickSettingsState.kt:internal fun nativeQuickSettings: List&lt;QuickSettingState&gt;</ID>
+    <ID>LongParameterList:QuickSettingsState.kt:private fun quickSettings: List&lt;QuickSettingState&gt;</ID>
+    <ID>LongParameterList:RootHeadTrackerProbe.kt:RootHeadTrackerProbe$private fun open: Bundle</ID>
+    <ID>LongParameterList:SettingsRefresher.kt:SettingsRefresher</ID>
+    <ID>LongParameterList:ShizukuAudioClient.kt:ShizukuAudioClient$internal suspend fun prepareCommunication: CommunicationLease</ID>
+    <ID>LongParameterList:ShizukuAudioClient.kt:ShizukuAudioClient$internal suspend fun startHeadTrackerProbe: HeadTrackerLease</ID>
+    <ID>LongParameterList:ShizukuAudioClient.kt:ShizukuAudioClient$private suspend fun openHeadTracker: HeadTrackerLease</ID>
+    <ID>LongParameterList:ShizukuAudioService.kt:ShizukuAudioService$private fun openHeadTracker: Bundle</ID>
+    <ID>LongParameterList:UsbAbsoluteVolumeBroker.kt:UsbAbsoluteVolumeBroker$@Synchronized fun acquire: Result</ID>
+    <ID>LongParameterList:WearMediaController.kt:WearMediaController</ID>
+    <ID>LoopWithTooManyJumpStatements:CompanionHandoffController.kt:CompanionHandoffController$while</ID>
+    <ID>LoopWithTooManyJumpStatements:CompanionPreferences.kt:CompanionPreferences$for</ID>
+    <ID>LoopWithTooManyJumpStatements:DongleUsb.kt:DongleUsb$for</ID>
+    <ID>LoopWithTooManyJumpStatements:LivePcmConsumer.kt:BoundedPcmDelivery$while</ID>
+    <ID>LoopWithTooManyJumpStatements:LiveRecordEditor.kt:LiveRecordEditor$while</ID>
+    <ID>LoopWithTooManyJumpStatements:LiveValueEditor.kt:LiveValueEditor$while</ID>
+    <ID>LoopWithTooManyJumpStatements:NativeHeadTrackingController.kt:NativeHeadTrackingController$while</ID>
+    <ID>LoopWithTooManyJumpStatements:RichText.kt:while</ID>
+    <ID>LoopWithTooManyJumpStatements:SwipeBack.kt:while</ID>
+    <ID>NestedBlockDepth:A2dpPlaybackRecovery.kt:A2dpPlaybackRecovery$@SuppressLint("MissingPermission") internal fun connectProfile: Boolean</ID>
+    <ID>NestedBlockDepth:DongleUsbVolume.kt:DongleUsbVolume$private suspend fun run</ID>
+    <ID>NestedBlockDepth:KotlinModule.kt:KotlinModule$@SuppressLint("UnsafeDynamicallyLoadedCode") override fun onPackageLoaded</ID>
+    <ID>NestedBlockDepth:NativeGameModeEngine.kt:NativeGameModeEngine$suspend fun tick: NativeGameModeController.State</ID>
+    <ID>NestedBlockDepth:NearbyPairingController.kt:NearbyPairingController$private fun startScan</ID>
+    <ID>NoNameShadowing:AboutCard.kt:serialNumbers</ID>
+    <ID>NoNameShadowing:CompanionPreferences.kt:CompanionPreferences$device</ID>
+    <ID>NoNameShadowing:DongleController.kt:DongleController${ it.observe() }</ID>
+    <ID>NoNameShadowing:DongleProtocol.kt:DongleProtocol${ it &lt;= MAXIMUM_PERCENT }</ID>
+    <ID>NoNameShadowing:DongleSettings.kt:value</ID>
+    <ID>NoNameShadowing:HfpCallTransport.kt:HfpCallTransport.&lt;no name provided&gt;$context</ID>
+    <ID>NoNameShadowing:LibrePodsService.kt:LibrePodsService$device</ID>
+    <ID>NoNameShadowing:NativeGameTransportClient.kt:NativeGameTransportClient${ handler.removeCallbacks(it.timeout) sendOwnedRestore(it.restoreSerial) }</ID>
+    <ID>NoNameShadowing:NoiseControlSettings.kt:{ when { dragOffset &lt;= it.start -&gt; 0 dragOffset &gt;= it.endInclusive -&gt; 100 else -&gt; null } }</ID>
+    <ID>NoNameShadowing:OpenSourceLicensesScreen.kt:expanded</ID>
+    <ID>NoNameShadowing:UsbAbsoluteVolumeTransport.kt:UsbAbsoluteVolumeTransport.&lt;no name provided&gt;$context</ID>
+    <ID>PrintStackTrace:AppSettingsScreen.kt:e</ID>
+    <ID>SuspendFunSwallowedCancellation:AppDataRepository.kt:AppDataRepository$catch (error: Exception) { initialized.completeExceptionally(error) throw error }</ID>
+    <ID>SuspendFunSwallowedCancellation:BluetoothIdentitySettings.kt:IdentityPreferenceController$catch (cancelled: CancellationException) { mutableState.value = mutableState.value.copy(known = false) throw cancelled }</ID>
+    <ID>SuspendFunSwallowedCancellation:CommunicationAudioController.kt:CommunicationAudioController$catch (_: Exception) { failed = true }</ID>
+    <ID>SuspendFunSwallowedCancellation:CompanionHandoffController.kt:CompanionHandoffController$catch (_: Exception) { false }</ID>
+    <ID>SuspendFunSwallowedCancellation:CompanionHandoffController.kt:CompanionHandoffController$catch (_: Exception) { if (!closed &amp;&amp; generation == epoch) mutableState.value = CompanionState(detail = "Saved PC link is unavailable. Link your PC again.") }</ID>
+    <ID>SuspendFunSwallowedCancellation:CompanionHandoffController.kt:CompanionHandoffController$catch (cancelled: CancellationException) { selected.key.fill(0) throw cancelled }</ID>
+    <ID>SuspendFunSwallowedCancellation:CompanionHandoffController.kt:CompanionHandoffController$runCatching</ID>
+    <ID>SuspendFunSwallowedCancellation:CompanionHandoffHost.kt:CompanionHandoffHost$catch (cancelled: CancellationException) { failed(MediaInspectionReason.CANCELLED) throw cancelled }</ID>
+    <ID>SuspendFunSwallowedCancellation:CompanionPairing.kt:CompanionPairingClient$runCatching</ID>
+    <ID>SuspendFunSwallowedCancellation:CompanionPreferenceAdapter.kt:CompanionPreferenceAdapter$catch (error: Exception) { if (!current() || app.settings.value != target) throw CompanionProjectionSuperseded() throw error }</ID>
+    <ID>SuspendFunSwallowedCancellation:CompanionPreferenceAdapter.kt:CompanionPreferenceAdapter$catch (error: Exception) { if (!current() || pod.settings.value != next) throw CompanionProjectionSuperseded() throw error }</ID>
+    <ID>SuspendFunSwallowedCancellation:DongleController.kt:DongleController$catch (cancelled: CancellationException) { currentCoroutineContext().ensureActive() false }</ID>
+    <ID>SuspendFunSwallowedCancellation:DongleController.kt:DongleController$catch (cancelled: CancellationException) { currentCoroutineContext().ensureActive() return notSent }</ID>
+    <ID>SuspendFunSwallowedCancellation:DongleController.kt:DongleController$catch (error: Exception) { runCatching { transport.close() } throw error }</ID>
+    <ID>SuspendFunSwallowedCancellation:DongleController.kt:DongleController$runCatching</ID>
+    <ID>SuspendFunSwallowedCancellation:DongleHearingRecords.kt:DongleHearingRecords$catch (error: Exception) { runCatching { lease.publish(client) { profileData = null profileCharacteristic = null val readStatus = if (error is CancellationException) SettingsReadStatus.WAITING else SettingsReadStatus.UNAVAILABLE state.update { it.copy(hearingProfile = null, hearingAidData = byteArrayOf(), hearingAidReadStatus = readStatus) } } } throw error }</ID>
+    <ID>SuspendFunSwallowedCancellation:DongleHearingRecords.kt:DongleHearingRecords$catch (error: Exception) { runCatching { lease.publish(client) { val readStatus = if (error is CancellationException) SettingsReadStatus.WAITING else SettingsReadStatus.UNAVAILABLE state.update { it.copy(transparencyData = byteArrayOf(), transparencyReadStatus = readStatus) } } } throw error }</ID>
+    <ID>SuspendFunSwallowedCancellation:DongleProtocol.kt:DongleSession$catch (_: Exception) { transportBroken = true; runCatching { closeTransport() } }</ID>
+    <ID>SuspendFunSwallowedCancellation:DongleProtocol.kt:DongleSession$catch (error: Exception) { leaseFailed = true // An acquire may have succeeded even when its receipt was lost. if (acquiring &amp;&amp; error !is DongleBusyException) { transportBroken = true runCatching { closeTransport() } } throw error }</ID>
+    <ID>SuspendFunSwallowedCancellation:DongleUsb.kt:DongleUsb$catch (error: Exception) { runCatching { selected?.close() }; throw error }</ID>
+    <ID>SuspendFunSwallowedCancellation:DongleUsbVolume.kt:DongleUsbVolume$catch (failure: Exception) { if (policyOwner === owner &amp;&amp; settingsCheckpoint === activeCheckpoint) { failed = wanted &amp;&amp; target() == selected wanted = false; job?.cancel() } throw failure }</ID>
+    <ID>SuspendFunSwallowedCancellation:DongleUsbVolume.kt:DongleUsbVolume$runCatching</ID>
+    <ID>SuspendFunSwallowedCancellation:LibrePodsService.kt:LibrePodsService$catch (e: Exception) { Log.e(TAG, "Error inserting heart rate record", e) }</ID>
+    <ID>SuspendFunSwallowedCancellation:LibrePodsService.kt:LibrePodsService$runCatching</ID>
+    <ID>SuspendFunSwallowedCancellation:MicrophoneRouteProbeReceiver.kt:MicrophoneRouteProbeReceiver$catch (cancelled: CancellationException) { Log.i(TAG, "Own microphone check cancelled") throw cancelled }</ID>
+    <ID>SuspendFunSwallowedCancellation:MicrophoneRouteProbeReceiver.kt:MicrophoneRouteProbeReceiver$catch (failure: Exception) { Log.w(TAG, "Root microphone cleanup failed: ${failure.javaClass.simpleName}") }</ID>
+    <ID>SuspendFunSwallowedCancellation:NativeGameProbeReceiver.kt:NativeGameProbeReceiver$catch (failure: Exception) { Log.w(TAG, "$operation failed: ${failure.message}") }</ID>
+    <ID>SuspendFunSwallowedCancellation:NativeGameProbeReceiver.kt:NativeGameProbeReceiver$runCatching</ID>
+    <ID>SuspendFunSwallowedCancellation:NativeHeadTrackingController.kt:NativeHeadTrackingController$runCatching</ID>
+    <ID>SuspendFunSwallowedCancellation:NearbyConnector.kt:NearbyConnector$catch (error: Exception) { if (error is CancellationException) { outcome = "cancelled"; throw error } outcome = "failed" Log.w(TAG, "Nearby media connection failed", error) return false }</ID>
+    <ID>SuspendFunSwallowedCancellation:NearbyPairingController.kt:NearbyPairingController$catch (error: Exception) { if (error is CancellationException) throw error Log.w(TAG, "Consent confirmation unavailable", error) }</ID>
+    <ID>SuspendFunSwallowedCancellation:SettingsRefresher.kt:SettingsRefresher$catch (cancelled: CancellationException) { request?.let { device.aacp.cancelControlSessionRefresh(it) } throw cancelled }</ID>
+    <ID>SuspendFunSwallowedCancellation:ShizukuAudioClient.kt:ShizukuAudioClient$catch (_: Exception) { 0 }</ID>
+    <ID>SuspendFunSwallowedCancellation:ShizukuAudioClient.kt:ShizukuAudioClient$catch (_: Exception) { false }</ID>
+    <ID>SuspendFunSwallowedCancellation:ShizukuAudioClient.kt:ShizukuAudioClient$catch (cancelled: CancellationException) { request.active.set(false); throw cancelled }</ID>
+    <ID>SuspendFunSwallowedCancellation:ShizukuAudioClient.kt:ShizukuAudioClient$catch (error: Exception) { // Blocking Binder can return after cancellation, before withContext delivers its result. request?.active?.set(false) runCatching { opened?.close() } throw error }</ID>
+    <ID>SuspendFunSwallowedCancellation:ShizukuAudioClient.kt:ShizukuAudioClient$catch (error: Exception) { if (error is CancellationException) throw error false }</ID>
+    <ID>SuspendFunSwallowedCancellation:ShizukuAudioClient.kt:ShizukuAudioClient$catch (error: Exception) { if (error is CancellationException) throw error synchronized(lock) { if (!closed) mutableState.update { it.copy(detail = error.message.orEmpty()) } } false }</ID>
+    <ID>SuspendFunSwallowedCancellation:ShizukuAudioClient.kt:ShizukuAudioClient$catch (error: Exception) { request?.let { it.active.set(false) withContext(NonCancellable + Dispatchers.IO) { runCatching { finishHeadTrackerProbe(it) } } } throw error }</ID>
+    <ID>SuspendFunSwallowedCancellation:ShizukuAudioClient.kt:ShizukuAudioClient$catch (error: Exception) { synchronized(lock) { if (!closed &amp;&amp; playbackRequest === request) mutableState.update { it.copy(detail = error.message.orEmpty()) } } false }</ID>
+    <ID>SuspendFunSwallowedCancellation:ShizukuAudioClient.kt:ShizukuAudioClient$catch (failure: Exception) { // No AACP input has started before this method returns a verified lease. withContext(NonCancellable + Dispatchers.IO) { runCatching { finishCommunication(request, true) } } throw failure }</ID>
+    <ID>SuspendFunSwallowedCancellation:ShizukuAudioClient.kt:ShizukuAudioClient$catch (failure: Exception) { withContext(NonCancellable + Dispatchers.IO) { runCatching { finishMicrophoneProbe(request) } } throw failure }</ID>
+    <ID>SuspendFunSwallowedCancellation:ShizukuAudioClient.kt:ShizukuAudioClient$runCatching</ID>
+    <ID>SuspendFunSwallowedCancellation:SpatialHeadTrackingProbe.kt:SpatialHeadTrackingProbe$catch (cancelled: CancellationException) { diagnosticReason = "cancelled" reason = "Calibration stopped." throw cancelled }</ID>
+    <ID>SuspendFunSwallowedCancellation:SpatialHeadTrackingProbe.kt:SpatialHeadTrackingProbe$runCatching</ID>
+    <ID>SuspendFunSwallowedCancellation:SwipeBack.kt:catch (_: CancellationException) { // A gesture may interrupt the animation without disposing this scene's receiver. currentCoroutineContext().ensureActive() }</ID>
+    <ID>SuspendFunSwallowedCancellation:SwipeBack.kt:catch (_: CancellationException) { animatedOffset.animateTo( 0f, tween(150) ) }</ID>
+    <ID>SwallowedException:A2dpPlaybackRecovery.kt:A2dpPlaybackRecovery$_: Exception</ID>
+    <ID>SwallowedException:AirPodsMicrophone.kt:AirPodsMicrophone$_: Exception</ID>
+    <ID>SwallowedException:AirPodsMicrophone.kt:AirPodsMicrophone$_: IllegalArgumentException</ID>
+    <ID>SwallowedException:AppleRepository.kt:AppleRepository$e: Exception</ID>
+    <ID>SwallowedException:AppleViewModel.kt:AppleViewModel$_: Exception</ID>
+    <ID>SwallowedException:BleScanController.kt:BleScanController$_: Exception</ID>
+    <ID>SwallowedException:BleScanController.kt:BleScanController$_: SecurityException</ID>
+    <ID>SwallowedException:BleScanController.kt:BleScanController.&lt;no name provided&gt;$_: SecurityException</ID>
+    <ID>SwallowedException:BluetoothIdentitySettings.kt:IdentityPreferenceController$_: Exception</ID>
+    <ID>SwallowedException:BluetoothVolumeSupport.kt:BluetoothVolumeSupport$_: Exception</ID>
+    <ID>SwallowedException:CommunicationAudioController.kt:CommunicationAudioController$_: Exception</ID>
+    <ID>SwallowedException:CompanionCallMonitor.kt:CompanionCallMonitor$_: Exception</ID>
+    <ID>SwallowedException:CompanionHandoffController.kt:CompanionHandoffController$_: Exception</ID>
+    <ID>SwallowedException:CompanionHandoffController.kt:CompanionHandoffController$_: IOException</ID>
+    <ID>SwallowedException:CompanionHandoffController.kt:CompanionHandoffController$_: SecurityException</ID>
+    <ID>SwallowedException:CompanionHandoffHost.kt:CompanionHandoffHost$_: Exception</ID>
+    <ID>SwallowedException:CompanionHolds.kt:CompanionHolds$_: Exception</ID>
+    <ID>SwallowedException:CompanionPairing.kt:CompanionPairingClient$_: Exception</ID>
+    <ID>SwallowedException:CompanionPreferences.kt:CompanionPreferences$_: CompanionProjectionSuperseded</ID>
+    <ID>SwallowedException:CompanionPreferences.kt:CompanionPreferences$_: Exception</ID>
+    <ID>SwallowedException:CompanionSettings.kt:_: Exception</ID>
+    <ID>SwallowedException:CompanionSettings.kt:_: SecurityException</ID>
+    <ID>SwallowedException:DeviceListScreen.kt:_: Exception</ID>
+    <ID>SwallowedException:DongleAutomaticReads.kt:DongleAutomaticReads$_: Exception</ID>
+    <ID>SwallowedException:DongleController.kt:DongleController$_: DongleBusyException</ID>
+    <ID>SwallowedException:DongleController.kt:DongleController$_: Exception</ID>
+    <ID>SwallowedException:DongleController.kt:DongleController$cancelled: CancellationException</ID>
+    <ID>SwallowedException:DongleProtocol.kt:DongleSession$_: Exception</ID>
+    <ID>SwallowedException:DongleUsbVolume.kt:DongleUsbVolume$_: Exception</ID>
+    <ID>SwallowedException:DongleUsbVolume.kt:DongleUsbVolume$_: SupersededHostRequest</ID>
+    <ID>SwallowedException:HfpCallSuppression.kt:HfpCallSuppression$_: android.os.RemoteException</ID>
+    <ID>SwallowedException:HfpCallTransport.kt:HfpCallTransport$_: RuntimeException</ID>
+    <ID>SwallowedException:IslandWindow.kt:IslandWindow$_: TimeoutCancellationException</ID>
+    <ID>SwallowedException:KotlinModule.kt:KotlinModule$_: Throwable</ID>
+    <ID>SwallowedException:LibrePodsService.kt:LibrePodsService$_: Exception</ID>
+    <ID>SwallowedException:LibrePodsService.kt:LibrePodsService$_: SecurityException</ID>
+    <ID>SwallowedException:LibrePodsService.kt:LibrePodsService.&lt;no name provided&gt;$_: SecurityException</ID>
+    <ID>SwallowedException:ListeningModeDialog.kt:ListeningModeDialog$_: Exception</ID>
+    <ID>SwallowedException:LivePcmConsumer.kt:BoundedPcmDelivery$_: Exception</ID>
+    <ID>SwallowedException:LiveRecordEditor.kt:LiveRecordEditor$_: Exception</ID>
+    <ID>SwallowedException:LiveValueEditor.kt:LiveValueEditor$_: Exception</ID>
+    <ID>SwallowedException:NativeGameModeController.kt:NativeGameModeController$_: Exception</ID>
+    <ID>SwallowedException:NativeGameTransportClient.kt:NativeGameTransportClient$_: IllegalArgumentException</ID>
+    <ID>SwallowedException:NativeGameTransportClient.kt:NativeGameTransportClient$_: RuntimeException</ID>
+    <ID>SwallowedException:NativeGameTransportClient.kt:NativeGameTransportClient.Companion$_: RuntimeException</ID>
+    <ID>SwallowedException:NativeGameTransportClient.kt:NativeGameTransportClient.Companion$_: android.content.pm.PackageManager.NameNotFoundException</ID>
+    <ID>SwallowedException:NativeGameTransportServer.kt:NativeGameTransportServer$_: IllegalArgumentException</ID>
+    <ID>SwallowedException:NativeGameTransportServer.kt:NativeGameTransportServer$_: LinkageError</ID>
+    <ID>SwallowedException:NativeGameTransportServer.kt:NativeGameTransportServer$_: RuntimeException</ID>
+    <ID>SwallowedException:NativeGameTransportServer.kt:NativeGameTransportServer$_: android.os.RemoteException</ID>
+    <ID>SwallowedException:NativeGameTransportServer.kt:NativeGameTransportServer$_: java.util.NoSuchElementException</ID>
+    <ID>SwallowedException:NativeGameTransportServer.kt:NativeGameTransportServer.&lt;no name provided&gt;$_: RuntimeException</ID>
+    <ID>SwallowedException:NativeGameTransportServer.kt:NativeGameTransportServer.Companion$_: PackageManager.NameNotFoundException</ID>
+    <ID>SwallowedException:NativeGameTransportServer.kt:NativeGameTransportServer.Companion$_: RuntimeException</ID>
+    <ID>SwallowedException:NativeHeadTrackingController.kt:NativeHeadTrackingController$_: Exception</ID>
+    <ID>SwallowedException:PopupWindow.kt:PopupWindow$error: RuntimeException</ID>
+    <ID>SwallowedException:RecordingScreen.kt:_: Exception</ID>
+    <ID>SwallowedException:RootHeadTrackerProbe.kt:RootHeadTrackerProbe.Lease$_: Exception</ID>
+    <ID>SwallowedException:RootUsbAbsoluteVolume.kt:RootUsbAbsoluteVolume$_: Exception</ID>
+    <ID>SwallowedException:RootUsbAbsoluteVolume.kt:RootUsbAbsoluteVolume$_: android.os.RemoteException</ID>
+    <ID>SwallowedException:ShizukuAudioClient.kt:ShizukuAudioClient$_: Exception</ID>
+    <ID>SwallowedException:ShizukuAudioService.kt:ShizukuAudioService$_: Exception</ID>
+    <ID>SwallowedException:ShizukuAudioService.kt:ShizukuAudioService$_: ReflectiveOperationException</ID>
+    <ID>SwallowedException:ShizukuAudioService.kt:ShizukuAudioService$_: SecurityException</ID>
+    <ID>SwallowedException:SpatialAudioAccess.kt:SpatialAudioAccess$_: Exception</ID>
+    <ID>SwallowedException:SpatialAudioAccess.kt:SpatialAudioAccess.Framework$_: NoSuchMethodException</ID>
+    <ID>SwallowedException:SpatialHeadTrackingProbe.kt:SpatialHeadTrackingProbe$_: TimeoutCancellationException</ID>
+    <ID>SwallowedException:SwipeBack.kt:_: CancellationException</ID>
+    <ID>SwallowedException:UsbAbsoluteVolumeSystemPolicy.kt:UsbAbsoluteVolumeSystemPolicy$_: android.os.RemoteException</ID>
+    <ID>SwallowedException:UsbAbsoluteVolumeTransport.kt:UsbAbsoluteVolumeTransport$_: RuntimeException</ID>
+    <ID>SwallowedException:UsbAudioDevices.kt:UsbAudioDevices.Framework$_: NoSuchMethodException</ID>
+    <ID>ThrowsCount:CalibratedHeadMotion.kt:internal suspend fun streamCalibratedHeadMotion</ID>
+    <ID>ThrowsCount:CompanionHandoffController.kt:CompanionHandoffController$@Synchronized fun reconnect</ID>
+    <ID>ThrowsCount:CompanionPreferenceAdapter.kt:CompanionPreferenceAdapter$suspend fun apply: Boolean</ID>
+    <ID>ThrowsCount:DongleAutomaticReads.kt:DongleAutomaticReads$private suspend fun readHealth</ID>
+    <ID>ThrowsCount:DongleController.kt:DongleController$private suspend fun runConnection</ID>
+    <ID>ThrowsCount:DongleProtocol.kt:DongleProtocol$fun exchange: ByteArray</ID>
+    <ID>ThrowsCount:DongleProtocol.kt:DongleSession$suspend fun await: ByteArray</ID>
+    <ID>ThrowsCount:DongleProtocol.kt:DongleSession$suspend fun command: DongleProtocol.Status</ID>
+    <ID>ThrowsCount:DongleProtocol.kt:DongleSession$suspend fun requestAudio: DongleProtocol.AudioProfile</ID>
+    <ID>ThrowsCount:DongleUsb.kt:DongleUsb$suspend fun open: Link</ID>
+    <ID>ThrowsCount:DongleUsb.kt:DongleUsb.Link$fun exchange: ByteArray</ID>
+    <ID>ThrowsCount:DongleUsbVolume.kt:DongleUsbVolume$private suspend fun run</ID>
+    <ID>ThrowsCount:PipePcmConsumer.kt:PipePcmConsumer$override fun onPcm</ID>
+    <ID>TooGenericExceptionCaught:A2dpPlaybackRecovery.kt:A2dpPlaybackRecovery$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:AirPodsMicrophone.kt:AirPodsMicrophone$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:AirPodsMicrophone.kt:AirPodsMicrophone$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:AppDataRepository.kt:AppDataRepository$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:AppSettingsScreen.kt:e: Exception</ID>
+    <ID>TooGenericExceptionCaught:AppleRepository.kt:AppleRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:AppleViewModel.kt:AppleViewModel$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:BackgroundAudioAccess.kt:BackgroundAudioAccess$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:BleScanController.kt:BleScanController$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:BluetoothIdentitySettings.kt:IdentityPreferenceController$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:BluetoothVolumeSupport.kt:BluetoothVolumeSupport$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:BluetoothVolumeSync.kt:BluetoothVolumeSync$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:BootReceiver.kt:BootReceiver$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:CommunicationAudioController.kt:CommunicationAudioController$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:CommunicationAudioController.kt:CommunicationAudioController$failure: Exception</ID>
+    <ID>TooGenericExceptionCaught:CompanionCallMonitor.kt:CompanionCallMonitor$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:CompanionHandoffController.kt:CompanionHandoffController$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:CompanionHandoffController.kt:CompanionHandoffController$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:CompanionHandoffHost.kt:CompanionHandoffHost$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:CompanionHandoffHost.kt:CompanionHandoffHost$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:CompanionHoldStore.kt:CompanionHoldStore$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:CompanionHolds.kt:CompanionHolds$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:CompanionLinkStore.kt:CompanionLinkStore$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:CompanionMediaInspection.kt:CompanionMediaInspection$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:CompanionPairing.kt:CompanionPairingClient$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:CompanionPreferenceAdapter.kt:CompanionPreferenceAdapter$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:CompanionPreferences.kt:CompanionPreferences$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:CompanionPreferences.kt:CompanionPreferences$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:CompanionSettings.kt:_: Exception</ID>
+    <ID>TooGenericExceptionCaught:ConnectionHaptics.kt:ConnectionHaptics$error: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:DeviceListScreen.kt:_: Exception</ID>
+    <ID>TooGenericExceptionCaught:DongleAutomaticReads.kt:DongleAutomaticReads$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:DongleController.kt:DongleController$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:DongleController.kt:DongleController$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:DongleHearingRecords.kt:DongleHearingRecords$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:DongleProtocol.kt:DongleSession$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:DongleProtocol.kt:DongleSession$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:DongleUsb.kt:DongleUsb$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:DongleUsb.kt:DongleUsb.Link$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:DongleUsbVolume.kt:DongleUsbVolume$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:DongleUsbVolume.kt:DongleUsbVolume$failure: Exception</ID>
+    <ID>TooGenericExceptionCaught:EldDecoder.kt:EldDecoder$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ExperimentalAudioController.kt:ExperimentalAudioController$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:ExternalSpatialMotion.kt:ExternalSpatialMotion$failure: Exception</ID>
+    <ID>TooGenericExceptionCaught:HfpCallTransport.kt:HfpCallTransport$_: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:IslandStatusBarAppearance.kt:IslandStatusBarAppearance$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:IslandWindow.kt:IslandWindow$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:IslandWindow.kt:IslandWindow$failure: Exception</ID>
+    <ID>TooGenericExceptionCaught:KotlinModule.kt:KotlinModule$_: Throwable</ID>
+    <ID>TooGenericExceptionCaught:KotlinModule.kt:KotlinModule$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:KotlinModule.kt:KotlinModule$e: Throwable</ID>
+    <ID>TooGenericExceptionCaught:KotlinModule.kt:KotlinModule$failure: Throwable</ID>
+    <ID>TooGenericExceptionCaught:LibrePodsAccessibilityService.kt:LibrePodsAccessibilityService$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:LibrePodsService.kt:LibrePodsService$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:LibrePodsService.kt:LibrePodsService$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:LibrePodsService.kt:LibrePodsService$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:LibrePodsService.kt:LibrePodsService$error: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:LibrePodsService.kt:LibrePodsService$failure: Exception</ID>
+    <ID>TooGenericExceptionCaught:LibrePodsService.kt:LibrePodsService.&lt;no name provided&gt;$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ListeningModeDialog.kt:ListeningModeDialog$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:LivePcmConsumer.kt:BoundedPcmDelivery$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:LiveRecordEditor.kt:LiveRecordEditor$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:LiveValueEditor.kt:LiveValueEditor$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:MainActivity.kt:e: Exception</ID>
+    <ID>TooGenericExceptionCaught:MediaController.kt:MediaController.&lt;no name provided&gt;$error: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:MicrophoneRouteProbeReceiver.kt:MicrophoneRouteProbeReceiver$failure: Exception</ID>
+    <ID>TooGenericExceptionCaught:NativeGameModeController.kt:NativeGameModeController$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:NativeGameProbeReceiver.kt:NativeGameProbeReceiver$failure: Exception</ID>
+    <ID>TooGenericExceptionCaught:NativeGameTransportClient.kt:NativeGameTransportClient$_: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:NativeGameTransportClient.kt:NativeGameTransportClient$failure: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:NativeGameTransportClient.kt:NativeGameTransportClient.&lt;no name provided&gt;$failure: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:NativeGameTransportClient.kt:NativeGameTransportClient.Companion$_: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:NativeGameTransportServer.kt:NativeGameTransportServer$_: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:NativeGameTransportServer.kt:NativeGameTransportServer$failure: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:NativeGameTransportServer.kt:NativeGameTransportServer.&lt;no name provided&gt;$_: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:NativeGameTransportServer.kt:NativeGameTransportServer.Companion$_: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:NativeHeadTrackingController.kt:NativeHeadTrackingController$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:NativeHeadTrackingController.kt:NativeHeadTrackingController$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:NativeHeadTrackingController.kt:NativeHeadTrackingController$failure: Exception</ID>
+    <ID>TooGenericExceptionCaught:NearbyConnector.kt:NearbyConnector$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:NearbyPairingController.kt:NearbyPairingController$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:NoiseControlWidgetConfigurationActivity.kt:NoiseControlWidgetConfigurationActivity$failure: Exception</ID>
+    <ID>TooGenericExceptionCaught:OwnedMediaPause.kt:OwnedMediaPause.Companion$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:PairingArtwork.kt:PairingArtwork$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:PairingArtwork.kt:PairingArtwork$error: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:PcmWaveWriter.kt:PcmWaveWriter$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:PipePcmConsumer.kt:PipePcmConsumer$failure: Exception</ID>
+    <ID>TooGenericExceptionCaught:PipePcmConsumer.kt:PipePcmConsumer.Companion$failure: Exception</ID>
+    <ID>TooGenericExceptionCaught:PopupWindow.kt:PopupWindow$e: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:PopupWindow.kt:PopupWindow$error: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:RecordingScreen.kt:_: Exception</ID>
+    <ID>TooGenericExceptionCaught:RootAppProcess.kt:RootAppProcess$failure: Exception</ID>
+    <ID>TooGenericExceptionCaught:RootDongleHid.kt:RootDongleHid$error: Throwable</ID>
+    <ID>TooGenericExceptionCaught:RootDongleHid.kt:RootDongleHid.AndroidAccess$error: Throwable</ID>
+    <ID>TooGenericExceptionCaught:RootDongleHid.kt:RootDongleHid.Connection$error: Throwable</ID>
+    <ID>TooGenericExceptionCaught:RootHeadTrackerProbe.kt:RootHeadTrackerProbe$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:RootHeadTrackerProbe.kt:RootHeadTrackerProbe.Lease$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:RootHeadTrackerProbe.kt:RootHeadTrackerProbe.Lease$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:RootUsbAbsoluteVolume.kt:RootUsbAbsoluteVolume$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:SettingsRefresher.kt:SettingsRefresher$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:ShizukuAudioClient.kt:ShizukuAudioClient$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:ShizukuAudioClient.kt:ShizukuAudioClient$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:ShizukuAudioClient.kt:ShizukuAudioClient$failure: Exception</ID>
+    <ID>TooGenericExceptionCaught:ShizukuAudioService.kt:ShizukuAudioService$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:ShizukuAudioService.kt:ShizukuAudioService$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:ShizukuAudioService.kt:ShizukuAudioService$failure: Exception</ID>
+    <ID>TooGenericExceptionCaught:SpatialAudioAccess.kt:SpatialAudioAccess$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:SpatialAudioAccess.kt:SpatialAudioAccess$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:SpatialHeadTrackingProbe.kt:SpatialHeadTrackingProbe$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:UsbAbsoluteVolumeSystemPolicy.kt:UsbAbsoluteVolumeSystemPolicy.NativeOwned$error: Throwable</ID>
+    <ID>TooGenericExceptionCaught:UsbAbsoluteVolumeTransport.kt:UsbAbsoluteVolumeTransport$_: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:UsbAudioDevices.kt:UsbAudioDevices$failure: Exception</ID>
+    <ID>TooManyFunctions:AppleViewModel.kt:AppleViewModel : ViewModelDeviceViewModel</ID>
+    <ID>TooManyFunctions:DongleController.kt:DongleController : Closeable</ID>
+    <ID>TooManyFunctions:LibrePodsService.kt:LibrePodsService : Service</ID>
+    <ID>TooManyFunctions:ShizukuAudioClient.kt:ShizukuAudioClient : Closeable</ID>
+    <ID>UnnecessaryNotNullOperator:CompanionPairing.kt:CompanionPairingClient$selected!!</ID>
+    <ID>UnnecessarySafeCall:CompanionMediaInspection.kt:CompanionMediaInspection$it.playbackInfo?.playbackType</ID>
+    <ID>UnnecessarySafeCall:DongleSettings.kt:state.status?.address</ID>
+    <ID>UnnecessarySafeCall:DongleSettings.kt:state.status?.generation</ID>
+    <ID>UnnecessarySafeCall:DongleUsbVolume.kt:DongleUsbVolume$pending?.request</ID>
+    <ID>UnnecessarySafeCall:IslandContent.kt:onConnect?.invoke()</ID>
+    <ID>UnnecessarySafeCall:ListeningModeDialog.kt:snapshot?.pending</ID>
+    <ID>UnnecessarySafeCall:OwnedMediaPause.kt:OwnedMediaPause.Companion$player.playbackInfo?.playbackType</ID>
+    <ID>UnnecessarySafeCall:QuickSettingsState.kt:game?.available</ID>
+    <ID>UnnecessarySafeCall:QuickSettingsState.kt:spatial?.desiredSpatialEnabled</ID>
+    <ID>UnnecessarySafeCall:QuickSettingsState.kt:spatial?.desiredTrackingEnabled</ID>
+    <ID>UnnecessarySafeCall:QuickSettingsState.kt:spatial?.enabled</ID>
+    <ID>UnnecessarySafeCall:QuickSettingsState.kt:spatial?.spatialAvailable</ID>
+    <ID>UnnecessarySafeCall:QuickSettingsState.kt:spatial?.spatialEnabled</ID>
+    <ID>UnnecessarySafeCall:StyledScaffold.kt:navigateBack?.invoke()</ID>
+    <ID>UnsafeCallOnNullableType:Bluetooth.kt:_bluetooth!!</ID>
+    <ID>UnsafeCallOnNullableType:BluetoothVolumeSync.kt:ShizukuVolumeSyncAudio$Int::class.javaPrimitiveType!!</ID>
+    <ID>UnsafeCallOnNullableType:CompanionPreferences.kt:CompanionPreferences$old!!</ID>
+    <ID>UnsafeCallOnNullableType:CompanionSettings.kt:code!!</ID>
+    <ID>UnsafeCallOnNullableType:CompanionSettings.kt:selectedPeer!!</ID>
+    <ID>UnsafeCallOnNullableType:CompanionSettings.kt:selectedPods!!</ID>
+    <ID>UnsafeCallOnNullableType:DongleController.kt:DongleController$usbDevice!!</ID>
+    <ID>UnsafeCallOnNullableType:DongleSettings.kt:state.status!!</ID>
+    <ID>UnsafeCallOnNullableType:DongleUsbVolume.kt:DongleUsbVolume$job!!</ID>
+    <ID>UnsafeCallOnNullableType:EldAudioFormatBridge.kt:EldAudioFormatBridge$Int::class.javaPrimitiveType!!</ID>
+    <ID>UnsafeCallOnNullableType:EldAudioFormatBridge.kt:EldAudioFormatBridge$Long::class.javaPrimitiveType!!</ID>
+    <ID>UnsafeCallOnNullableType:EldCodecBoundary.kt:EldCodecHookPlan$Boolean::class.javaPrimitiveType!!</ID>
+    <ID>UnsafeCallOnNullableType:EldCodecBoundary.kt:EldCodecHookPlan$Int::class.javaPrimitiveType!!</ID>
+    <ID>UnsafeCallOnNullableType:EldCodecObjects.kt:EldCodecObjects$Int::class.javaPrimitiveType!!</ID>
+    <ID>UnsafeCallOnNullableType:EldCodecObjects.kt:EldCodecObjects$Long::class.javaPrimitiveType!!</ID>
+    <ID>UnsafeCallOnNullableType:EldCodecObjects.kt:EldCodecObjects$extendedConfig!!</ID>
+    <ID>UnsafeCallOnNullableType:EldCodecObjects.kt:EldCodecObjects$extendedConstructor!!</ID>
+    <ID>UnsafeCallOnNullableType:EldCodecObjects.kt:EldCodecObjects$extendedId!!</ID>
+    <ID>UnsafeCallOnNullableType:EldCodecObjects.kt:EldCodecObjects$extendedIndex!!</ID>
+    <ID>UnsafeCallOnNullableType:EldCodecObjects.kt:EldCodecObjects$stockType!!</ID>
+    <ID>UnsafeCallOnNullableType:HfpBatteryNegotiation.kt:HfpBatteryHookMethods.Companion$Boolean::class.javaPrimitiveType!!</ID>
+    <ID>UnsafeCallOnNullableType:HfpCallSuppression.kt:HfpCallHookMethods.Companion$Boolean::class.javaPrimitiveType!!</ID>
+    <ID>UnsafeCallOnNullableType:IslandContent.kt:it.level!!</ID>
+    <ID>UnsafeCallOnNullableType:IslandWindow.kt:IslandWindow$autoCloseRunnable!!</ID>
+    <ID>UnsafeCallOnNullableType:LibrePodsService.kt:LibrePodsService$healthConnectClient!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_arrow_back!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_bluetooth!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_bolt!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_call!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_cancel!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_charger!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_check!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_chevron_left!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_chevron_right!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_circle!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_close!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_headphones!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_input_circle!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_notifications!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_output_circle!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_pause!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_play_arrow!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_save!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_send!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_settings!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_stack!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_vital_signs!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_volumeMute!!</ID>
+    <ID>UnsafeCallOnNullableType:MaterialIcons.kt:MaterialIcons$_volumeUp!!</ID>
+    <ID>UnsafeCallOnNullableType:NativeGameModeEngine.kt:NativeGameModeEngine$owner!!</ID>
+    <ID>UnsafeCallOnNullableType:NativeGameModeEngine.kt:NativeGameModeEngine$policyOwner()!!</ID>
+    <ID>UnsafeCallOnNullableType:NativeGameModeEngine.kt:NativeGameModeEngine$route!!</ID>
+    <ID>UnsafeCallOnNullableType:NativeGameModeEngine.kt:NativeGameModeEngine$value!!</ID>
+    <ID>UnsafeCallOnNullableType:NativeGameProbeReceiver.kt:NativeGameProbeReceiver$expected!!</ID>
+    <ID>UnsafeCallOnNullableType:NativeGameTransportServer.kt:NativeGameTransportServer$request.peer!!</ID>
+    <ID>UnsafeCallOnNullableType:OwnedMediaPause.kt:OwnedMediaPause.Companion$player.playbackState!!</ID>
+    <ID>UnsafeCallOnNullableType:PopupWindow.kt:PopupWindow$context.getDrawable(R.drawable.ic_power)!!</ID>
+    <ID>UnsafeCallOnNullableType:PopupWindow.kt:PopupWindow$context.getDrawable(R.drawable.island_battery_progress)!!</ID>
+    <ID>UnsafeCallOnNullableType:SpatialAudioAccess.kt:SpatialAudioAccess.Framework$Boolean::class.javaPrimitiveType!!</ID>
+    <ID>UnsafeCallOnNullableType:SpatialAudioAccess.kt:SpatialAudioAccess.Framework$Int::class.javaPrimitiveType!!</ID>
+    <ID>UnsafeCallOnNullableType:TransparencySettingsScreen.kt:original.ownVoiceAmplification!!</ID>
+    <ID>UnsafeCallOnNullableType:UsbAbsoluteVolumePolicyHooks.kt:UsbAbsoluteVolumePolicyHooks$Boolean::class.javaPrimitiveType!!</ID>
+    <ID>UnsafeCallOnNullableType:UsbAbsoluteVolumePolicyHooks.kt:UsbAbsoluteVolumePolicyHooks$Int::class.javaPrimitiveType!!</ID>
+    <ID>UnsafeCallOnNullableType:UsbAbsoluteVolumeSystemPolicy.kt:UsbAbsoluteVolumeSystemPolicy$Int::class.javaPrimitiveType!!</ID>
+    <ID>UnsafeCallOnNullableType:UsbAudioDevices.kt:UsbAudioDevices.Framework$Int::class.javaPrimitiveType!!</ID>
+    <ID>UnusedImport:AirPodsQSService.kt:import kotlinx.coroutines.flow.collect</ID>
+    <ID>UnusedImport:AppleViewModel.kt:import kotlinx.coroutines.flow.collect</ID>
+    <ID>UnusedImport:AppleViewModel.kt:import me.kavishdevar.librepods.core.bluetooth.att.types.parseHearingAidSettingsResponse</ID>
+    <ID>UnusedImport:BatteryWidget.kt:import kotlin.io.encoding.ExperimentalEncodingApi</ID>
+    <ID>UnusedImport:DeviceViewModel.kt:import androidx.lifecycle.ViewModel</ID>
+    <ID>UnusedImport:HeadphoneAccommodationsScreen.kt:import androidx.compose.foundation.layout.fillMaxWidth</ID>
+    <ID>UnusedImport:LibrePodsDatabase.kt:import androidx.room3.AutoMigration</ID>
+    <ID>UnusedImport:LibrePodsDatabase.kt:import androidx.room3.ColumnInfo</ID>
+    <ID>UnusedImport:LibrePodsService.kt:import me.kavishdevar.librepods.core.data.recording.Recording</ID>
+    <ID>UnusedImport:LibrePodsService.kt:import me.kavishdevar.librepods.core.utils.redactMac</ID>
+    <ID>UnusedImport:LibrePodsService.kt:import me.kavishdevar.librepods.data.xposed.XposedRemotePrefProvider</ID>
+    <ID>UnusedImport:ListeningModeDialog.kt:import kotlinx.coroutines.flow.collect</ID>
+    <ID>UnusedImport:NativeHeadTrackingController.kt:import kotlinx.coroutines.flow.collect</ID>
+    <ID>UnusedImport:RenderScreenContent.kt:import androidx.compose.ui.res.stringResource</ID>
+    <ID>UnusedImport:RenderScreenContent.kt:import me.kavishdevar.librepods.R</ID>
+    <ID>UnusedImport:RenderScreenContent.kt:import me.kavishdevar.librepods.core.bluetooth.aacp.types.ControlCommandIdentifier</ID>
+    <ID>UnusedImport:SpatialHeadTrackingProbe.kt:import kotlinx.coroutines.flow.collect</ID>
+    <ID>UnusedImport:StyledButton.kt:import androidx.compose.material3.MaterialTheme</ID>
+    <ID>UnusedImport:TransparencySettingsScreen.kt:import androidx.compose.foundation.layout.fillMaxWidth</ID>
+    <ID>UnusedParameter:AppInfoCard.kt:navigateToReleaseNotesScreen: (() -&gt; Unit)? = null</ID>
+    <ID>UnusedParameter:AppleSettingsScreen.kt:refreshDeviceSettings: suspend (AppleDevice) -&gt; DeviceSettingsRefreshResult</ID>
+    <ID>UnusedParameter:ConnectionSettings.kt:onTakeoverWhenCallChanged: (Boolean) -&gt; Unit</ID>
+    <ID>UnusedParameter:ConnectionSettings.kt:onTakeoverWhenDisconnectedChanged: (Boolean) -&gt; Unit</ID>
+    <ID>UnusedParameter:ConnectionSettings.kt:onTakeoverWhenIdleChanged: (Boolean) -&gt; Unit</ID>
+    <ID>UnusedParameter:ConnectionSettings.kt:onTakeoverWhenMediaStartChanged: (Boolean) -&gt; Unit</ID>
+    <ID>UnusedParameter:ConnectionSettings.kt:onTakeoverWhenMusicChanged: (Boolean) -&gt; Unit</ID>
+    <ID>UnusedParameter:ConnectionSettings.kt:onTakeoverWhenRingingCallChanged: (Boolean) -&gt; Unit</ID>
+    <ID>UnusedParameter:ConnectionSettings.kt:takeoverWhenCall: Boolean</ID>
+    <ID>UnusedParameter:ConnectionSettings.kt:takeoverWhenDisconnected: Boolean</ID>
+    <ID>UnusedParameter:ConnectionSettings.kt:takeoverWhenIdle: Boolean</ID>
+    <ID>UnusedParameter:ConnectionSettings.kt:takeoverWhenMediaStart: Boolean</ID>
+    <ID>UnusedParameter:ConnectionSettings.kt:takeoverWhenMusic: Boolean</ID>
+    <ID>UnusedParameter:ConnectionSettings.kt:takeoverWhenRingingCall: Boolean</ID>
+    <ID>UnusedParameter:HeadphoneAccommodationsScreen.kt:refreshDeviceSettings: suspend (AppleDevice) -&gt; DeviceSettingsRefreshResult</ID>
+    <ID>UnusedParameter:HeartRateScreen.kt:setHrRange: (ClosedRange&lt;Long&gt;) -&gt; Unit</ID>
+    <ID>UnusedParameter:PressAndHoldSettingsScreen.kt:writing: Boolean</ID>
+    <ID>UnusedParameter:Theme.kt:overrideMaterialColor: Color? = null</ID>
+    <ID>UnusedParameter:TransparencySettingsScreen.kt:pending: Boolean = false</ID>
+    <ID>UnusedPrivateProperty:AppleViewModel.kt:AppleViewModel$private val appDataRepository: AppDataRepository</ID>
+    <ID>UnusedPrivateProperty:AppleViewModel.kt:AppleViewModel$private val heartRateRepository: HeartRateRepository</ID>
+    <ID>UnusedPrivateProperty:BluetoothVolumeSync.kt:ShizukuVolumeSyncAudio$private val context: Context</ID>
+    <ID>UnusedPrivateProperty:CompanionPreferenceAdapter.kt:CompanionPreferenceAdapter$private val apple: AppleRepository</ID>
+    <ID>UnusedPrivateProperty:EldFailureWatchdog.kt:EldFailureWatchdog$private val read: () -&gt; EldEncoderHealth?</ID>
+    <ID>UnusedPrivateProperty:LiveAccommodationsEditor.kt:LiveAccommodationsEditor$private val write: suspend (Any, AccommodationsReport, Long, AccommodationsSelection, Boolean) -&gt; AccommodationsResult</ID>
+    <ID>UnusedPrivateProperty:NativeHeadTrackingController.kt:NativeHeadTrackingController$private val hostBlocked: () -&gt; Boolean</ID>
+    <ID>UnusedPrivateProperty:NativeQuickGameMode.kt:NativeQuickGameMode$private val failed: () -&gt; Unit</ID>
+    <ID>UnusedPrivateProperty:PairingConsentGate.kt:PairingConsentGate$private val onConsent: (BluetoothDevice, Long, Consent) -&gt; Unit</ID>
+    <ID>VarCouldBeVal:AppSettingsViewModel.kt:AppSettingsViewModel$private var _showResetDialog = MutableStateFlow(false)</ID>
+  </CurrentIssues>
+</SmellBaseline>

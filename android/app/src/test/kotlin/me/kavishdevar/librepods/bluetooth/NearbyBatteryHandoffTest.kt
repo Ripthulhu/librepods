@@ -17,6 +17,7 @@ import me.kavishdevar.librepods.core.devices.*
 import me.kavishdevar.librepods.database.app.AppSettingsEntity
 import me.kavishdevar.librepods.presentation.overlays.IslandWindow
 import me.kavishdevar.librepods.services.LibrePodsService
+import me.kavishdevar.librepods.services.PairedBatteryTracker
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -130,13 +131,12 @@ class NearbyBatteryHandoffTest {
         @Suppress("UNCHECKED_CAST")
         val devices = field("_devices").get(service) as MutableStateFlow<Map<MacAddress, Device<*, *, *>>>
         devices.value = mapOf(device.macAddress to device)
-        val recent = field("recentProximityReports").get(service) as RecentProximityReports
+        val tracker = field("batteryTracker").get(service) as PairedBatteryTracker
+        val recent = trackerField("recentProximityReports").get(tracker) as RecentProximityReports
         val nanos = SystemClock.elapsedRealtimeNanos()
         recent.observe("5A:16:2B:91:D1:CD", advertisement(80, 70, 60), nanos - 1_000_000_000, now - 1000, nanos)
         recent.observe("5A:16:2B:91:D1:CD", advertisement(127, 72, 65), nanos - 500_000_000, now - 500, nanos)
-        val replay = LibrePodsService::class.java.getDeclaredMethod("replayRecentBattery", AppleDevice::class.java,
-            BluetoothSocket::class.java, ByteArray::class.java, ByteArray::class.java).apply { isAccessible = true }
-        fun apply(expected: BluetoothSocket? = socket) { replay.invoke(service, device, expected, irk, key) }
+        fun apply(expected: BluetoothSocket? = socket) { tracker.replayRecentBattery(device, expected, irk, key) }
         fun unchanged() = assertEquals(initial, device.state.value.battery)
         try {
             field("destroying").setBoolean(service, true); apply(); unchanged(); field("destroying").setBoolean(service, false)
@@ -160,7 +160,7 @@ class NearbyBatteryHandoffTest {
             device.aacp.disconnect(socket)
             load()
             @Suppress("UNCHECKED_CAST")
-            (field("pairedObservations").get(service) as MutableMap<MacAddress, Long>).clear()
+            (trackerField("pairedObservations").get(tracker) as MutableMap<MacAddress, Long>).clear()
             apply(null)
             assertEquals(65, device.state.value.battery.first { it.component == BatteryComponent.CASE }.level)
             val beforeExpiry = device.state.value.battery
@@ -185,6 +185,7 @@ class NearbyBatteryHandoffTest {
         AACPManager::class.java.getDeclaredField("socket").apply { isAccessible = true }.set(device.aacp, socket)
     }
     private fun field(name: String) = LibrePodsService::class.java.getDeclaredField(name).apply { isAccessible = true }
+    private fun trackerField(name: String) = PairedBatteryTracker::class.java.getDeclaredField(name).apply { isAccessible = true }
     private fun advertisement(left: Int, right: Int, case: Int): ByteArray {
         val plain = ByteArray(16).apply { this[1] = left.toByte(); this[2] = right.toByte(); this[3] = case.toByte() }
         val cipher = Cipher.getInstance("AES/ECB/NoPadding").apply {

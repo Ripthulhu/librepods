@@ -38,12 +38,15 @@ internal data class FixedSpatialState(val checked: Boolean?, val writable: Boole
             val nativeEnabled = flag("enabled")
             val device = flag("device_enabled")
             val tracking = flag("head_tracker_enabled")
-            val checked = if (known && nativeEnabled != null && device != null && tracking != null)
-                nativeEnabled && device && !tracking else null
+            val checked = if (known) fixedChecked(nativeEnabled, device, tracking) else null
             return FixedSpatialState(checked,
                 known && checked != null && flag("fixed_supported") == true && flag("route_selected") == true,
                 value.getString("reason") ?: "unavailable")
         }
+
+        /** Fixed spatial audio is on when native spatial audio is enabled for the device without head tracking. */
+        private fun fixedChecked(nativeEnabled: Boolean?, device: Boolean?, tracking: Boolean?): Boolean? =
+            if (nativeEnabled == null || device == null || tracking == null) null else nativeEnabled && device && !tracking
     }
 }
 

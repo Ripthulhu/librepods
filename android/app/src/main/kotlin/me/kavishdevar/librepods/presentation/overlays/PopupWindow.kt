@@ -53,6 +53,7 @@ import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.view.descendants
 import me.kavishdevar.librepods.LibrePodsApplication
 import me.kavishdevar.librepods.R
@@ -246,7 +247,7 @@ class PopupWindow(private val context: Context, private val onCloseCallback: () 
 
     private fun reloadBackground(view: View, resource: Int) {
         val padding = Rect(view.paddingLeft, view.paddingTop, view.paddingRight, view.paddingBottom)
-        view.background = themed.getDrawable(resource)
+        view.background = ContextCompat.getDrawable(themed, resource)
         view.setPadding(padding.left, padding.top, padding.right, padding.bottom)
     }
 

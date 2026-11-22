@@ -68,7 +68,7 @@ class DongleNativeConnectionServiceTest {
         val app = LibrePodsApplication()
         ReflectionHelpers.setField(service, "mApplication", app)
         app.experimentalAudioControllers[address] = audioController
-        field("companionHoldReady").set(service, true)
+        holdsField("ready").set(companionHolds(), true)
         field("companionHoldStore\$delegate").set(service, lazyOf(holdStore))
         field("dongleControls\$delegate").set(service, lazyOf(dongle))
         `when`(dongle.inhibitsAutomaticNative()).thenAnswer { inhibited.get() }
@@ -265,11 +265,15 @@ class DongleNativeConnectionServiceTest {
         LibrePodsService::class.java.getDeclaredMethod("onDeviceConnected", BluetoothDevice::class.java,
             Continuation::class.java).apply { isAccessible = true }.invoke(service, bluetooth, continuation)
     }
+    private fun companionHolds() = field("companionHolds").get(service) as CompanionHolds
+    private fun holdsField(name: String) = CompanionHolds::class.java.getDeclaredField(name).apply { isAccessible = true }
+    private fun handoffHost() = field("handoffHost").get(service) as CompanionHandoffHost
+    private fun handoffField(name: String) = CompanionHandoffHost::class.java.getDeclaredField(name).apply { isAccessible = true }
     private fun field(name: String) = LibrePodsService::class.java.getDeclaredField(name).apply { isAccessible = true }
 
     @Suppress("UNCHECKED_CAST")
-    private fun holds() = field("companionReleased").get(service) as MutableSet<MacAddress>
+    private fun holds() = holdsField("released").get(companionHolds()) as MutableSet<MacAddress>
 
     @Suppress("UNCHECKED_CAST")
-    private fun operations() = field("companionOperations").get(service) as ConcurrentHashMap<MacAddress, Any>
+    private fun operations() = handoffField("operations").get(handoffHost()) as ConcurrentHashMap<MacAddress, Any>
 }

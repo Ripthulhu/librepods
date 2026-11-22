@@ -75,8 +75,12 @@ class CaseBatteryScanTest {
         assertEquals(0, device.connectionNumber.value)
         assertNull(device.aacp.captureAudioSocket())
         assertTrue(device.state.value.componentState.isEmpty())
-        for (name in listOf("pairedObservations", "pairedLids", "nearbyCases", "nearbyMedia"))
-            assertTrue("Cases cannot enter $name", (field(name).get(service) as Map<*, *>).isEmpty())
+        assertTrue("Cases cannot enter pairedObservations", (PairedBatteryTracker::class.java.getDeclaredField("pairedObservations")
+            .apply { isAccessible = true }.get(field("batteryTracker").get(service)) as Map<*, *>).isEmpty())
+        val deferral = field("nearbyDeferral").get(service)
+        for (name in listOf("pairedLids", "nearbyCases", "nearbyMedia"))
+            assertTrue("Cases cannot enter $name", (NearbyConnectDeferral::class.java.getDeclaredField(name)
+                .apply { isAccessible = true }.get(deferral) as Map<*, *>).isEmpty())
         verifyNoInteractions(pairing)
     }
 

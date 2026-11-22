@@ -219,8 +219,6 @@
     <string name="listening_mode_adaptive_description">Dynamically adjust external noise</string>
     <string name="listening_mode_noise_cancellation_description">Blocks out external sounds</string>
     <string name="contact">Contact</string>
-    <string name="email">E-Mail</string>
-    <string name="github_issues">GitHub Issues</string>
     <string name="version_code">Version code</string>
     <string name="build_type">Build type</string>
     <string name="no">No</string>
@@ -253,8 +251,6 @@
     <string name="customizations_unavailable">Customizations unavailable. Connect your AirPods at least once to access.</string>
     <string name="xposed_available">Xposed available</string>
     <string name="app_enabled_in_xposed">App enabled in Xposed</string>
-    <string name="subject">Subject</string>
-    <string name="describe_your_issue">Describe your issue</string>
     <string name="optimized_charging">Optimized Charge Limit</string>
     <string name="optimized_charging_description">AirPods can learn from your daily usage and determine when to charge to an optmized limit and when to allow or full charge. This limit adapts to your daily usage and preserves your battery lifespan over time.\nThis setting may not affect unsupported AirPods, or AirPods on an older firmware version.</string>
     <string name="enable_app_in_xposed_or_update_device">Update your device or enable LibrePods in Xposed and reopen the app to proceed.</string>
@@ -284,10 +280,8 @@
     <string name="devices">Devices</string>
     <string name="configure_widget">Configure Widget</string>
     <string name="welcome_to_appname">Welcome to</string>
-    <string name="contact_email_supporting_text">Get help directly from the developer. Might take time to reply, I\'m a single person working on this :)</string>
     <string name="contact_github_title">GitHub</string>
     <string name="contact_github_description">View the source code, releases and project updates.</string>
-    <string name="contact_github_supporting_text">Create an issue on the GitHub repository. Use this only when you are requesting features, or you are sure that you\'ve found a bug. Try asking the community before opening an issue.</string>
     <string name="error_opening_github_link">Error opening GitHub link</string>
     <string name="scanMode">Scan mode</string>
     <string name="ble_settings">BLE Settings</string>

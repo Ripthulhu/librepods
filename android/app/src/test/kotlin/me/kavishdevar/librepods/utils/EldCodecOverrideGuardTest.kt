@@ -78,7 +78,8 @@ class EldCodecOverrideGuardTest {
         fun trusted(caller: Int = 10294, uid: Int = 10294, system: Boolean = true,
             packages: List<String>? = listOf(actor), claimedUid: Int? = 10294,
             claimedPackage: String? = actor, delegated: Boolean = false) =
-            EldCodecOverrideGuard.trustedCaller(caller, uid, system, packages, claimedUid, claimedPackage, delegated)
+            EldCodecOverrideGuard.trustedCaller(EldCodecOverrideGuard.CallerIdentity(
+                caller, uid, system, packages, claimedUid, claimedPackage, delegated))
         assertTrue(trusted())
         assertFalse(trusted(caller = 1000)) // Settings/system_server.
         assertFalse(trusted(caller = 1002)) // Bluetooth/internal watchdog.

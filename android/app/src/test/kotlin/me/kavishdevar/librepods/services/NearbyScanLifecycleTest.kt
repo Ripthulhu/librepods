@@ -57,14 +57,14 @@ class NearbyScanLifecycleTest {
         val repository = mock(AppDataRepository::class.java)
         `when`(repository.settings).thenReturn(settings)
         field("appDataRepository\$delegate").set(service, lazyOf(repository))
-        field("bleReady").set(service, true)
+        bleScan().ready = true
         power.setIsInteractive(true)
         doAnswer { callbacks += it.getArgument<ScanCallback>(2); null }.`when`(scanner)
             .startScan(anyList(), any(ScanSettings::class.java), any(ScanCallback::class.java))
     }
 
     @After fun close() {
-        method("stopActiveBleScan").invoke(service)
+        bleScan().stopActive()
         (field("serviceScope").get(service) as CoroutineScope).cancel()
     }
 
@@ -114,8 +114,7 @@ class NearbyScanLifecycleTest {
         callbacks.single().onScanFailed(ScanCallback.SCAN_FAILED_SCANNING_TOO_FREQUENTLY)
         looper.idle()
         // The app has no nearby visits in this unit test, so stop the active scanner and clear its request.
-        field("bleRequested").set(service, false)
-        method("stopActiveBleScan").invoke(service)
+        bleScan().stop()
         looper.idleFor(Duration.ofSeconds(31))
         assertEquals(1, callbacks.size)
     }
@@ -126,9 +125,7 @@ class NearbyScanLifecycleTest {
             Intent(if (on) Intent.ACTION_SCREEN_ON else Intent.ACTION_SCREEN_OFF))
     }
 
-    private fun start(updateMode: Boolean = false) =
-        LibrePodsService::class.java.getDeclaredMethod("startBleScanner", Boolean::class.javaPrimitiveType)
-            .apply { isAccessible = true }.invoke(service, updateMode)
+    private fun start(updateMode: Boolean = false) = bleScan().start(updateMode)
+    private fun bleScan() = field("bleScan").get(service) as BleScanController
     private fun field(name: String) = LibrePodsService::class.java.getDeclaredField(name).apply { isAccessible = true }
-    private fun method(name: String) = LibrePodsService::class.java.getDeclaredMethod(name).apply { isAccessible = true }
 }

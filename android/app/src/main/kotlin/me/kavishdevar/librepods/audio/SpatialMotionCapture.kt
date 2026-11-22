@@ -7,7 +7,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -22,6 +21,7 @@ import me.kavishdevar.librepods.core.data.apple.motionCounterStep
 import me.kavishdevar.librepods.core.devices.AppleDevice
 import me.kavishdevar.librepods.core.utils.HeadTracking
 import java.io.File
+import java.io.Writer
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import org.json.JSONObject
@@ -49,10 +49,23 @@ internal class SpatialMotionCapture(
         onFile: (File) -> Unit = {},
     ): SpatialMotionCaptureResult = withContext(Dispatchers.IO) {
         if (!capturing.compareAndSet(false, true)) return@withContext SpatialMotionCaptureResult(null, 0, "Another motion capture is running.")
-        val owner = Any()
-        var file: File? = null
-        var samples = 0
-        try {
+        CaptureRun(request, device, isCurrent, onFile).execute()
+    }
+
+    /** One capture: owns the motion request and the output file until it ends. */
+    private inner class CaptureRun(
+        private val request: SpatialMotionCaptureRequest,
+        private val device: AppleDevice,
+        private val isCurrent: () -> Boolean,
+        private val onFile: (File) -> Unit,
+    ) {
+        private val owner = Any()
+        private var file: File? = null
+        private var samples = 0
+        private var previousCounter: Long? = null
+        private var previousDeviceTime: Long? = null
+
+        suspend fun execute(): SpatialMotionCaptureResult = try {
             check(device.macAddress.value.equals(request.expectedMac, ignoreCase = true)) { "The requested AirPods do not match." }
             check(isCurrent()) { "The expected AirPods are not connected." }
             val leftIsPrimary = device.state.value.leftIsPrimary
@@ -60,8 +73,21 @@ internal class SpatialMotionCapture(
             check(directory.isDirectory || directory.mkdirs()) { "Cannot create the private capture directory." }
             val output = File.createTempFile("${request.phase}-", ".jsonl", directory)
             file = output
+            val reason = record(output, leftIsPrimary)
+            SpatialMotionCaptureResult(output, samples, reason)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (expectedFailure: Exception) {
+            // Every other failure ends this debug capture and is reported as its result.
+            SpatialMotionCaptureResult(file, samples, expectedFailure.message ?: "Motion capture failed.")
+        } finally {
+            try { device.stopHeadTracking(owner) } finally { capturing.set(false) }
+        }
+
+        /** Writes the header and samples; returns why recording ended. */
+        private suspend fun record(output: File, leftIsPrimary: Boolean): String {
             val metadata = device.metadata.value
-            val reason = output.bufferedWriter().use { writer ->
+            return output.bufferedWriter().use { writer ->
                 val startedArrival = arrivalNs()
                 check(startedArrival > 0) { "Host arrival clock must be positive and increasing." }
                 writer.appendLine(JSONObject().apply {
@@ -75,54 +101,53 @@ internal class SpatialMotionCapture(
                     put("started_arrival_ns", startedArrival)
                 }.toString())
                 onFile(output)
-                fun requireCurrent() {
-                    if (device.state.value.leftIsPrimary != leftIsPrimary)
-                        throw CaptureStopped("Stopped: primary bud changed.")
-                    if (!isCurrent() || device.state.value.headTrackingState == BuddyState.INACTIVE)
-                        throw CaptureStopped("Stopped: connection or motion request ended.")
-                }
-                var previousCounter: Long? = null
-                var previousDeviceTime: Long? = null
-                var previousArrival = startedArrival
                 val finished = withTimeoutOrNull(request.durationSeconds * 1_000L) {
-                    coroutineScope {
-                        val guard = launch {
-                            while (true) { requireCurrent(); delay(100) }
-                        }
-                        try {
-                            // StateFlow's first value may belong to an earlier stream.
-                            motion.drop(1).filterNotNull().filter { report ->
-                                val counter = report.counter
-                                val previous = previousCounter
-                                if (counter != null && previous != null) {
-                                    val delta = motionCounterStep(previous, counter, previousDeviceTime, report.timestampNs)
-                                    if (delta == 0L) return@filter false
-                                    if (delta > 0x7fffffffL) throw CaptureStopped("Stopped: sensor counter moved backward.")
-                                }
-                                previousCounter = counter
-                                previousDeviceTime = report.timestampNs
-                                true
-                            }.take(MAX_SAMPLES).collect { report ->
-                                requireCurrent()
-                                val arrived = arrivalNs()
-                                check(arrived > previousArrival) { "Host arrival clock must be positive and increasing." }
-                                previousArrival = arrived
-                                writer.appendLine(motionCaptureSample(report, arrived).toString())
-                                samples++
-                            }
-                        } finally { guard.cancel() }
-                    }
+                    recordSamples(writer, leftIsPrimary, startedArrival)
                     true
                 } ?: false
                 if (finished) "Sample limit reached." else "Capture duration complete."
             }
-            SpatialMotionCaptureResult(output, samples, reason)
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (error: Exception) {
-            SpatialMotionCaptureResult(file, samples, error.message ?: "Motion capture failed.")
-        } finally {
-            try { device.stopHeadTracking(owner) } finally { capturing.set(false) }
+        }
+
+        private suspend fun recordSamples(writer: Writer, leftIsPrimary: Boolean, startedArrival: Long) {
+            var previousArrival = startedArrival
+            coroutineScope {
+                val guard = launch {
+                    while (true) { requireCurrent(leftIsPrimary); delay(100) }
+                }
+                try {
+                    // StateFlow's first value may belong to an earlier stream.
+                    motion.drop(1).filterNotNull().filter { isNewReport(it) }.take(MAX_SAMPLES).collect { report ->
+                        requireCurrent(leftIsPrimary)
+                        val arrived = arrivalNs()
+                        check(arrived > previousArrival) { "Host arrival clock must be positive and increasing." }
+                        previousArrival = arrived
+                        writer.appendLine(motionCaptureSample(report, arrived).toString())
+                        samples++
+                    }
+                } finally { guard.cancel() }
+            }
+        }
+
+        private fun requireCurrent(leftIsPrimary: Boolean) {
+            if (device.state.value.leftIsPrimary != leftIsPrimary)
+                throw CaptureStopped("Stopped: primary bud changed.")
+            if (!isCurrent() || device.state.value.headTrackingState == BuddyState.INACTIVE)
+                throw CaptureStopped("Stopped: connection or motion request ended.")
+        }
+
+        /** Skips repeated reports and stops when the wrapping 32-bit sensor counter moves backward. */
+        private fun isNewReport(report: MotionReport): Boolean {
+            val counter = report.counter
+            val previous = previousCounter
+            if (counter != null && previous != null) {
+                val delta = motionCounterStep(previous, counter, previousDeviceTime, report.timestampNs)
+                if (delta == 0L) return false
+                if (delta > SENSOR_COUNTER_HALF_RANGE) throw CaptureStopped("Stopped: sensor counter moved backward.")
+            }
+            previousCounter = counter
+            previousDeviceTime = report.timestampNs
+            return true
         }
     }
 
@@ -130,6 +155,7 @@ internal class SpatialMotionCapture(
 
     companion object {
         const val MAX_SAMPLES = 500
+        private const val SENSOR_COUNTER_HALF_RANGE = 0x7fffffffL
         private val capturing = AtomicBoolean(false)
     }
 }

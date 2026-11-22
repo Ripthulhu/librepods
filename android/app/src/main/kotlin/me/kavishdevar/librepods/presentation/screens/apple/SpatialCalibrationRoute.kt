@@ -84,8 +84,9 @@ internal fun SpatialCalibrationRoute(device: AppleDevice, navigateBack: () -> Un
     }
     val back = { cancel(); navigateBack() }
     BackHandler(enabled = running, onBack = back)
+    fun startAllowed() = nativeSpatialVersion && screenLive.get() && foreground.get()
     SpatialCalibrationScreen(progress, running, result, onStart = {
-        if (!running && nativeSpatialVersion && screenLive.get() && foreground.get()) {
+        if (!running && startAllowed()) {
             val socket = device.aacp.captureAudioSocket()
             if (socket == null || device.connectionState.value != ConnectionState.CONNECTED) {
                 result = SpatialHeadTrackingProbeResult("disconnected", 0, null)
@@ -117,6 +118,8 @@ internal fun SpatialCalibrationRoute(device: AppleDevice, navigateBack: () -> Un
                         return live.get() && screenLive.get() && foreground.get() && selected() && idle.get() &&
                             device.connectionState.value == ConnectionState.CONNECTED && device.aacp.ownsAudioSocket(socket) && !inCase
                     }
+                    // The cancellation branch rethrows after recording the result; detekt only accepts a bare rethrow.
+                    @Suppress("SuspendFunSwallowedCancellation")
                     try {
                         checked.await()
                         val completed = runProbe(context, SpatialHeadTrackingProbeRequest(device.macAddress.value),

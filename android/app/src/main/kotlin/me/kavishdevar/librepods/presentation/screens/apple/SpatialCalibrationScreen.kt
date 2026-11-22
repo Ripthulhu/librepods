@@ -153,8 +153,8 @@ internal fun SpatialCalibrationScreen(
                         Text(stringResource(message), style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth())
-                        if (running && progress != null && stage != SpatialCalibrationStage.READY && progress.secondsRemaining > 0) {
-                            val remaining = progress.secondsRemaining
+                        val remaining = progress?.secondsRemaining?.takeIf { running && stage != SpatialCalibrationStage.READY && it > 0 }
+                        if (remaining != null) {
                             Text(pluralStringResource(R.plurals.spatial_calibration_seconds, remaining, remaining),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
